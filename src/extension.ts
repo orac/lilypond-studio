@@ -49,25 +49,34 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 }
 
-function createLilypondTask(taskType: 'preview' | 'publish'): vscode.Task {
+function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 	const config = vscode.workspace.getConfiguration('lilypondStudio');
 	const lilypondPath = config.get<string>('executablePath') || 'lilypond';
+	const includeDirs = config.get<string[]>('includeDirs') || [];
 
 	const editor = vscode.window.activeTextEditor;
-	const filePath = editor?.document.uri.fsPath || '${file}';
+	const filePath = editor?.document.uri.fsPath || '*.ly';
 
-	const args = taskType === 'publish'
-		? ['-dno-point-and-click', filePath]
-		: [filePath];
+	const args: string[] = [];
 
-	const execution = new vscode.ShellExecution(lilypondPath, args);
+	includeDirs.forEach(dir => {
+		args.push(`--include=${dir}`);
+	});
 
-	const taskName = taskType === 'preview'
+	if (mode === 'publish') {
+		args.push('-dno-point-and-click');
+	}
+
+	args.push(filePath);
+
+	const execution = new vscode.ProcessExecution(lilypondPath, args);
+
+	const taskName = mode === 'preview'
 		? 'Engrave (preview)'
 		: 'Engrave (publish)';
 
 	const task = new vscode.Task(
-		{ type: 'lilypond', taskType },
+		{ type: 'lilypond', mode },
 		vscode.TaskScope.Workspace,
 		taskName,
 		'lilypond',
@@ -79,7 +88,10 @@ function createLilypondTask(taskType: 'preview' | 'publish'): vscode.Task {
 	task.presentationOptions = {
 		reveal: vscode.TaskRevealKind.Always,
 		panel: vscode.TaskPanelKind.Dedicated,
-		clear: true
+		clear: true,
+		showReuseMessage: false,
+		echo: true,
+		focus: false
 	};
 
 	return task;
@@ -93,4 +105,4 @@ async function openPdfPreview(pdfPath: string) {
 	});
 }
 
-export function deactivate() {}
+export function deactivate() { }

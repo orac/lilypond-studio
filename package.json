@@ -27,6 +27,14 @@
           "type": "string",
           "default": "lilypond",
           "description": "Path to the LilyPond executable. If not in PATH, provide the full path (e.g., C:\\Program Files (x86)\\LilyPond\\usr\\bin\\lilypond.exe). Default: 'lilypond'."
+        },
+        "lilypondStudio.includeDirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional include directories for LilyPond. Each gets appended to the search paths when you use \\include in a file. On Windows, ensure you include the trailing slash."
         }
       }
     },
@@ -37,6 +45,11 @@
           "file": {
             "type": "string",
             "description": "The LilyPond file to build"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["preview", "publish"],
+            "description": "Build mode: preview (with point-and-click) or publish (without point-and-click)"
           }
         }
       }
