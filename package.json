@@ -7,15 +7,53 @@
     "vscode": "^1.107.0"
   },
   "categories": [
-    "Other"
+    "Programming Languages"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
+    "languages": [
       {
-        "command": "lilypond-studio.helloWorld",
-        "title": "Hello World"
+        "id": "lilypond",
+        "aliases": ["LilyPond", "lilypond"],
+        "extensions": [".ly"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "LilyPond Studio",
+      "properties": {
+        "lilypondStudio.executablePath": {
+          "type": "string",
+          "default": "lilypond",
+          "description": "Path to the LilyPond executable. If not in PATH, provide the full path (e.g., C:\\Program Files (x86)\\LilyPond\\usr\\bin\\lilypond.exe). Default: 'lilypond'."
+        }
+      }
+    },
+    "taskDefinitions": [
+      {
+        "type": "lilypond",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "The LilyPond file to build"
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "lilypond",
+        "owner": "lilypond",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
       }
     ]
   },
