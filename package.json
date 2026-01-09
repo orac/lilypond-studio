@@ -20,6 +20,13 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "grammars": [
+      {
+        "language": "lilypond",
+        "scopeName": "source.lilypond",
+        "path": "./syntaxes/lilypond.tmLanguage.json"
+      }
+    ],
     "configuration": {
       "title": "LilyPond Studio",
       "properties": {

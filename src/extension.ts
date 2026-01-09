@@ -2,14 +2,16 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('LilyPond Studio extension is now active!');
-
 	const taskProvider = vscode.tasks.registerTaskProvider('lilypond', {
 		provideTasks: () => {
-			return [
-				createLilypondTask('preview'),
-				createLilypondTask('publish')
-			];
+			const editor = vscode.window.activeTextEditor;
+			if (editor && editor.document.languageId === 'lilypond') {
+				return [
+					createLilypondTask('preview'),
+					createLilypondTask('publish')
+				];
+			}
+			return [];
 		},
 		resolveTask: () => {
 			return undefined;
@@ -56,6 +58,7 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 
 	const editor = vscode.window.activeTextEditor;
 	const filePath = editor?.document.uri.fsPath || '*.ly';
+	const fileDir = editor ? path.dirname(editor.document.uri.fsPath) : undefined;
 
 	const args: string[] = [];
 
@@ -69,7 +72,9 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 
 	args.push(filePath);
 
-	const execution = new vscode.ProcessExecution(lilypondPath, args);
+	const execution = new vscode.ProcessExecution(lilypondPath, args, {
+		cwd: fileDir
+	});
 
 	const taskName = mode === 'preview'
 		? 'Engrave (preview)'
@@ -91,7 +96,7 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 		clear: true,
 		showReuseMessage: false,
 		echo: true,
-		focus: false
+		focus: false,
 	};
 
 	return task;
@@ -101,7 +106,7 @@ async function openPdfPreview(pdfPath: string) {
 	const uri = vscode.Uri.file(pdfPath);
 	await vscode.commands.executeCommand('vscode.open', uri, {
 		viewColumn: vscode.ViewColumn.Beside,
-		preserveFocus: false
+		preserveFocus: true, // doesn't seem to do anything
 	});
 }
 
