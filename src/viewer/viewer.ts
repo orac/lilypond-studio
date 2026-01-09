@@ -20,7 +20,8 @@ interface TexteditLink {
 	element: HTMLAnchorElement;
 	pageNum: number;
 	line: number;
-	char: number;
+	charStart: number;
+	charEnd: number;
 }
 
 // Store all links with their positions for forward sync
@@ -120,15 +121,14 @@ async function renderPdf() {
 						try {
 							const parsed = parseTexteditUri(linkUrl);
 							if (parsed) {
-								const key = parsed.line + ':' + parsed.char;
+								const key = parsed.line + ':' + parsed.charStart;
 								if (!linksByPosition.has(key)) {
 									linksByPosition.set(key, []);
 								}
 								linksByPosition.get(key)!.push({
 									element: link,
 									pageNum: pageNum,
-									line: parsed.line,
-									char: parsed.char
+									...parsed
 								});
 							}
 						} catch (e) {
@@ -159,11 +159,9 @@ function parseTexteditUri(uri: string) {
 		return null;
 	}
 
-	const [, , lineStr, charStr] = match;
-	return {
-		line: parseInt(lineStr, 10),
-		char: parseInt(charStr, 10)
-	};
+	const [, , lineStr, charStartStr, charEndStr] = match;
+	const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
+	return { line, charStart, charEnd };
 }
 
 function highlightPosition(line: number, char: number) {

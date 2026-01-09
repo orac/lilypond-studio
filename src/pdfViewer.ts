@@ -129,23 +129,23 @@ export class PdfViewerPanel {
 				throw new Error('Invalid textedit URI format');
 			}
 
-			const [, encodedFilePath, lineStr, charStr] = match;
+			const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
 
 			// Decode URL-encoded characters (like %20 for spaces)
 			const decodedFilePath = decodeURIComponent(encodedFilePath);
-			const line = parseInt(lineStr, 10);
-			const char = parseInt(charStr, 10);
+			const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
 
 			// Open the source file
 			const fileUri = vscode.Uri.file(decodedFilePath);
 			const document = await vscode.workspace.openTextDocument(fileUri);
 			const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
-
+			
 			// Move cursor to the position (LilyPond uses 1-based line numbers)
-			const position = new vscode.Position(line - 1, char);
-			editor.selection = new vscode.Selection(position, position);
+			const startPosition = new vscode.Position(line - 1, charStart);
+			const endPosition = new vscode.Position(line - 1, charEnd);
+			editor.selection = new vscode.Selection(startPosition, endPosition);
 			editor.revealRange(
-				new vscode.Range(position, position),
+				new vscode.Range(startPosition, endPosition),
 				vscode.TextEditorRevealType.Default
 			);
 
@@ -156,7 +156,7 @@ export class PdfViewerPanel {
 				borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder')
 			});
 
-			editor.setDecorations(decorationType, [new vscode.Range(position, position.translate(0, 1))]);
+			editor.setDecorations(decorationType, [new vscode.Range(startPosition, endPosition)]);
 			setTimeout(() => {
 				decorationType.dispose();
 			}, 500);
