@@ -15,8 +15,13 @@
     "languages": [
       {
         "id": "lilypond",
-        "aliases": ["LilyPond", "lilypond"],
-        "extensions": [".ly"],
+        "aliases": [
+          "LilyPond",
+          "lilypond"
+        ],
+        "extensions": [
+          ".ly"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -55,7 +60,10 @@
           },
           "mode": {
             "type": "string",
-            "enum": ["preview", "publish"],
+            "enum": [
+              "preview",
+              "publish"
+            ],
             "description": "Build mode: preview (with point-and-click) or publish (without point-and-click)"
           }
         }
@@ -65,7 +73,10 @@
       {
         "name": "lilypond",
         "owner": "lilypond",
-        "fileLocation": ["relative", "${workspaceFolder}"],
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
         "pattern": {
           "regexp": "^(.+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
           "file": 1,
@@ -92,15 +103,18 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.107.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.48.1",
-    "eslint": "^9.39.1",
+    "@types/vscode": "^1.107.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.1",
+    "eslint": "^9.39.1",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.48.1"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^5.4.530"
   }
 }

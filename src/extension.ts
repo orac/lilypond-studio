@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { PdfViewerPanel } from './pdfViewer';
 
 export function activate(context: vscode.ExtensionContext) {
 	const taskProvider = vscode.tasks.registerTaskProvider('lilypond', {
@@ -29,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const fileName = path.basename(filePath, '.ly');
 				const pdfPath = path.join(fileDir, `${fileName}.pdf`);
 
-				await openPdfPreview(pdfPath);
+				await openPdfPreview(pdfPath, context, editor.document.uri);
 			}
 		}
 	});
@@ -102,12 +103,9 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 	return task;
 }
 
-async function openPdfPreview(pdfPath: string) {
-	const uri = vscode.Uri.file(pdfPath);
-	await vscode.commands.executeCommand('vscode.open', uri, {
-		viewColumn: vscode.ViewColumn.Beside,
-		preserveFocus: true, // doesn't seem to do anything
-	});
+async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext, sourceUri?: vscode.Uri) {
+	const pdfUri = vscode.Uri.file(pdfPath);
+	PdfViewerPanel.createOrShow(context.extensionUri, pdfUri, sourceUri);
 }
 
 export function deactivate() { }

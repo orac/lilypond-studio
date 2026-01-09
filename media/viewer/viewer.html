@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src {{cspSource}}; style-src {{cspSource}} 'unsafe-inline'; img-src {{cspSource}} data:; connect-src {{cspSource}}; worker-src {{cspSource}} blob:;">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>PDF Preview</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			background-color: #525252;
+		}
+		#pdf-container {
+			width: 100%;
+			height: 100vh;
+			overflow: auto;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 20px;
+			box-sizing: border-box;
+		}
+		.pdf-page {
+			margin-bottom: 20px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+			position: relative;
+		}
+		canvas {
+			display: block;
+		}
+		.page-links {
+			position: absolute;
+			top: 0;
+			left: 0;
+			pointer-events: none;
+		}
+		.page-links a {
+			position: absolute;
+			pointer-events: auto;
+			cursor: pointer;
+			border: 1px solid transparent;
+		}
+		.page-links a:hover {
+			background-color: rgba(255, 255, 0, 0.2);
+			border-color: rgba(255, 255, 0, 0.5);
+		}
+		.highlight {
+			position: absolute;
+			background-color: rgba(255, 255, 0, 0.3);
+			border: 2px solid rgba(255, 200, 0, 0.8);
+			pointer-events: none;
+			transition: opacity 0.3s;
+			z-index: 10;
+		}
+		#loading {
+			color: white;
+			text-align: center;
+			padding: 50px;
+		}
+	</style>
+</head>
+<body>
+	<div id="loading">Loading PDF...</div>
+	<div id="pdf-container"></div>
+	<div id="viewer-config" data-config="{{viewerConfig}}" style="display: none;"></div>
+
+	<script type="module" src="{{viewerScriptUri}}"></script>
+</body>
+</html>
