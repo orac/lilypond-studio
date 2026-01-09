@@ -46,7 +46,7 @@ async function main() {
 	// Build webview viewer
 	const viewerCtx = await esbuild.context({
 		entryPoints: [
-			'media/viewer/viewer.ts'
+			'src/viewer/viewer.ts'
 		],
 		bundle: true,
 		format: 'esm',

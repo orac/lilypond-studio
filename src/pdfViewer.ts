@@ -122,21 +122,19 @@ export class PdfViewerPanel {
 		}
 
 		try {
-			// Remove textedit:// prefix
-			const uriWithoutProtocol = uri.substring('textedit://'.length);
+			// Match the textedit:// URI format
+			// Captures: file path, line number, start char, end char
+			const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
+			if (!match) {
+				throw new Error('Invalid textedit URI format');
+			}
 
-			// Split into path and position parts
-			// Handle both Unix (/path/to/file.ly:line:char:char) and Windows (C:/path/to/file.ly:line:char:char)
-			const lastColonIndex = uriWithoutProtocol.lastIndexOf(':');
-			const secondLastColonIndex = uriWithoutProtocol.lastIndexOf(':', lastColonIndex - 1);
-			const thirdLastColonIndex = uriWithoutProtocol.lastIndexOf(':', secondLastColonIndex - 1);
-
-			const filePath = uriWithoutProtocol.substring(0, thirdLastColonIndex);
-			const line = parseInt(uriWithoutProtocol.substring(thirdLastColonIndex + 1, secondLastColonIndex), 10);
-			const char = parseInt(uriWithoutProtocol.substring(secondLastColonIndex + 1, lastColonIndex), 10);
+			const [, encodedFilePath, lineStr, charStr] = match;
 
 			// Decode URL-encoded characters (like %20 for spaces)
-			const decodedFilePath = decodeURIComponent(filePath);
+			const decodedFilePath = decodeURIComponent(encodedFilePath);
+			const line = parseInt(lineStr, 10);
+			const char = parseInt(charStr, 10);
 
 			// Open the source file
 			const fileUri = vscode.Uri.file(decodedFilePath);
@@ -224,7 +222,7 @@ export class PdfViewerPanel {
 		);
 
 		// Read the HTML template
-		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'media', 'viewer', 'viewer.html');
+		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'viewer', 'viewer.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
 
 		// Prepare configuration as JSON

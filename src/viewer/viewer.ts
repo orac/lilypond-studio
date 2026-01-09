@@ -154,19 +154,16 @@ async function renderPdf() {
 
 function parseTexteditUri(uri: string) {
 	// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
-	if (!uri.startsWith('textedit://')) {
+	const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
+	if (!match) {
 		return null;
 	}
 
-	const uriWithoutProtocol = uri.substring('textedit://'.length);
-	const lastColonIndex = uriWithoutProtocol.lastIndexOf(':');
-	const secondLastColonIndex = uriWithoutProtocol.lastIndexOf(':', lastColonIndex - 1);
-	const thirdLastColonIndex = uriWithoutProtocol.lastIndexOf(':', secondLastColonIndex - 1);
-
-	const line = parseInt(uriWithoutProtocol.substring(thirdLastColonIndex + 1, secondLastColonIndex), 10);
-	const char = parseInt(uriWithoutProtocol.substring(secondLastColonIndex + 1, lastColonIndex), 10);
-
-	return { line, char };
+	const [, , lineStr, charStr] = match;
+	return {
+		line: parseInt(lineStr, 10),
+		char: parseInt(charStr, 10)
+	};
 }
 
 function highlightPosition(line: number, char: number) {
