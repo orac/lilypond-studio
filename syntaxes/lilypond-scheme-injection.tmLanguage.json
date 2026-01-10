@@ -1,0 +1,21 @@
+{
+  "scopeName": "source.lilypond-scheme.injection",
+  "injectionSelector": "L:meta.embedded.block.scheme.lilypond",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.lilypond.scheme",
+      "contentName": "source.lilypond.embedded.scheme",
+      "begin": "#\\{",
+      "end": "#\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.lilypond.scheme" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.lilypond.scheme" }
+      },
+      "patterns": [
+        { "include": "source.lilypond" }
+      ]
+    }
+  ]
+}

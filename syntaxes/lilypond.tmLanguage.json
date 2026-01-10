@@ -124,21 +124,54 @@
     "scheme": {
       "patterns": [
         {
-          "name": "meta.embedded.scheme.lilypond",
+          "contentName": "meta.embedded.block.scheme.lilypond",
           "begin": "#\\(",
           "end": "\\)",
+          "beginCaptures": {
+            "0": { "name": "punctuation.section.embedded.begin.scheme.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.embedded.end.scheme.lilypond" }
+          },
           "patterns": [
-            { "include": "source.scheme" },
-            { "include": "#scheme" }
+            { "include": "source.scheme" }
           ]
         },
         {
-          "name": "constant.other.scheme-value.lilypond",
-          "match": "#['`]?[a-zA-Z_-][a-zA-Z0-9_-]*"
-        },
+          "name": "meta.embedded.expression.scheme.lilypond",
+          "contentName": "source.scheme.embedded.lilypond.expression",
+          "begin": "#(?=[a-zA-Z'`_-])",
+          "end": "(?![a-zA-Z0-9_>?!-])",
+          "patterns": [
+            { "include": "source.scheme" }
+          ]
+        }
+      ]
+    },
+    "scheme-lilypond-block": {
+      "patterns": [
         {
-          "name": "constant.language.boolean.lilypond",
-          "match": "#(t|f)\\b"
+          "contentName": "meta.embedded.block.lilypond.scheme",
+          "begin": "#\\{",
+          "end": "#\\}",
+          "beginCaptures": {
+            "0": { "name": "punctuation.section.embedded.begin.lilypond.scheme" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.embedded.end.lilypond.scheme" }
+          },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#keywords" },
+            { "include": "#commands" },
+            { "include": "#notes" },
+            { "include": "#chords" },
+            { "include": "#markup" },
+            { "include": "#scheme" },
+            { "include": "#operators" }
+          ]
         }
       ]
     },

@@ -29,7 +29,20 @@
       {
         "language": "lilypond",
         "scopeName": "source.lilypond",
-        "path": "./syntaxes/lilypond.tmLanguage.json"
+        "path": "./syntaxes/lilypond.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.scheme.lilypond": "scheme",
+          "source.scheme.embedded.lilypond.expression": "scheme",
+          "source.lilypond.embedded.scheme": "lilypond"
+        }
+      },
+      {
+        "scopeName": "source.lilypond-scheme.injection",
+        "path": "./syntaxes/lilypond-scheme-injection.tmLanguage.json",
+        "injectTo": ["meta.embedded.block.scheme.lilypond"],
+        "embeddedLanguages": {
+          "source.lilypond.embedded.scheme": "lilypond"
+        }
       }
     ],
     "configuration": {
