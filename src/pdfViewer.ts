@@ -10,12 +10,16 @@ export class PdfViewerPanel {
 	private sourceUri: vscode.Uri | undefined;
 	private disposables: vscode.Disposable[] = [];
 	private editorChangeListener: vscode.Disposable | undefined;
+	private hoverDecorationType: vscode.TextEditorDecorationType | undefined;
 
 	public static createOrShow(extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
 		const column = vscode.ViewColumn.Beside;
 
 		// If we already have a panel, show it and update the PDF
 		if (PdfViewerPanel.currentPanel) {
+			// Clear hover decoration when changing to a different file
+			PdfViewerPanel.currentPanel.clearHoverDecoration();
+
 			PdfViewerPanel.currentPanel.pdfUri = pdfUri;
 			PdfViewerPanel.currentPanel.sourceUri = sourceUri;
 
@@ -81,6 +85,12 @@ export class PdfViewerPanel {
 					case 'click':
 						this.handlePdfClick(message.uri);
 						return;
+					case 'hover':
+						this.handlePdfHover(message.uri);
+						return;
+					case 'unhover':
+						this.clearHoverDecoration();
+						return;
 					case 'ready':
 						// PDF is loaded and ready for sync
 						this.syncCurrentPosition();
@@ -97,6 +107,9 @@ export class PdfViewerPanel {
 
 	public dispose() {
 		PdfViewerPanel.currentPanel = undefined;
+
+		// Clean up hover decoration
+		this.clearHoverDecoration();
 
 		// Clean up editor sync listener
 		if (this.editorChangeListener) {
@@ -139,7 +152,7 @@ export class PdfViewerPanel {
 			const fileUri = vscode.Uri.file(decodedFilePath);
 			const document = await vscode.workspace.openTextDocument(fileUri);
 			const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
-			
+
 			// Move cursor to the position (LilyPond uses 1-based line numbers)
 			const startPosition = new vscode.Position(line - 1, charStart);
 			const endPosition = new vscode.Position(line - 1, charEnd);
@@ -148,21 +161,62 @@ export class PdfViewerPanel {
 				new vscode.Range(startPosition, endPosition),
 				vscode.TextEditorRevealType.Default
 			);
-
-			// Brief highlight animation
-			const decorationType = vscode.window.createTextEditorDecorationType({
-				backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
-				border: '1px solid',
-				borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder')
-			});
-
-			editor.setDecorations(decorationType, [new vscode.Range(startPosition, endPosition)]);
-			setTimeout(() => {
-				decorationType.dispose();
-			}, 500);
 		} catch (error) {
 			vscode.window.showErrorMessage(`Failed to parse point-and-click URI: ${uri}`);
 			console.error('Point-and-click error:', error);
+		}
+	}
+
+	private async handlePdfHover(uri: string) {
+		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
+		if (!uri.startsWith('textedit://')) {
+			return;
+		}
+
+		try {
+			// Match the textedit:// URI format
+			const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
+			if (!match) {
+				return;
+			}
+
+			const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
+
+			// Decode URL-encoded characters (like %20 for spaces)
+			const decodedFilePath = decodeURIComponent(encodedFilePath);
+			const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
+
+			// Check if this is the current source file
+			const fileUri = vscode.Uri.file(decodedFilePath);
+			const editor = vscode.window.activeTextEditor;
+
+			if (!editor || editor.document.uri.fsPath !== fileUri.fsPath) {
+				return;
+			}
+
+			// Clear any existing hover decoration
+			this.clearHoverDecoration();
+
+			// Create the hover decoration type
+			this.hoverDecorationType = vscode.window.createTextEditorDecorationType({
+				backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+				border: '1px solid',
+				borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder'),
+			});
+
+			// Apply the decoration (LilyPond uses 1-based line numbers)
+			const startPosition = new vscode.Position(line - 1, charStart);
+			const endPosition = new vscode.Position(line - 1, charEnd);
+			editor.setDecorations(this.hoverDecorationType, [new vscode.Range(startPosition, endPosition)]);
+		} catch (error) {
+			console.error('Hover decoration error:', error);
+		}
+	}
+
+	private clearHoverDecoration() {
+		if (this.hoverDecorationType) {
+			this.hoverDecorationType.dispose();
+			this.hoverDecorationType = undefined;
 		}
 	}
 

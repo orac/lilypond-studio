@@ -105,6 +105,19 @@ async function renderPdf() {
 						});
 					});
 
+					link.addEventListener('pointerenter', () => {
+						vscode.postMessage({
+							type: 'hover',
+							uri: linkUrl
+						});
+					});
+
+					link.addEventListener('pointerleave', () => {
+						vscode.postMessage({
+							type: 'unhover'
+						});
+					});
+
 					linkLayer.appendChild(link);
 
 					// Parse and store link position for forward sync
