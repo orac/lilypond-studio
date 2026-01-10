@@ -31,18 +31,13 @@ let pdfjsLib;
 
 async function renderPdf() {
 	try {
-		console.log('Importing PDF.js from:', config.pdfjsUri);
 		pdfjsLib = await import(config.pdfjsUri);
-		console.log('PDF.js imported successfully');
 
 		// Configure PDF.js worker
 		pdfjsLib.GlobalWorkerOptions.workerSrc = config.pdfjsWorkerUri;
-		console.log('Worker configured');
 
-		console.log('Loading PDF document...');
 		const loadingTask = pdfjsLib.getDocument(config.pdfUrl);
 		const pdf = await loadingTask.promise;
-		console.log('PDF loaded, pages:', pdf.numPages);
 
 		loading.style.display = 'none';
 
@@ -73,10 +68,6 @@ async function renderPdf() {
 
 			// Extract and render links
 			const annotations = await page.getAnnotations();
-			console.log('Page', pageNum, 'annotations:', annotations.length);
-			if (annotations.length > 0) {
-				console.log('First few annotations:', annotations.slice(0, 3));
-			}
 			const linkLayer = document.createElement('div');
 			linkLayer.className = 'page-links';
 			linkLayer.style.width = viewport.width + 'px';
@@ -90,11 +81,11 @@ async function renderPdf() {
 					const rect = annotation.rect;
 					const transform = viewport.transform;
 
-					// Convert PDF coordinates to viewport coordinates
+					// Convert PDF coordinates to viewport coordinates. Add a little extra height because the bboxes are quite tight.
 					const x = transform[0] * rect[0] + transform[4];
-					const y = transform[3] * rect[3] + transform[5];
+					const y = transform[3] * rect[3] + transform[5] - 1;
 					const width = (rect[2] - rect[0]) * transform[0];
-					const height = (rect[1] - rect[3]) * transform[3];
+					const height = (rect[1] - rect[3]) * transform[3] + 1;
 
 					const link = document.createElement('a');
 					link.style.left = x + 'px';
@@ -190,10 +181,6 @@ function highlightPosition(line: number, char: number) {
 	}
 
 	if (links && links.length > 0) {
-		// Highlight all matching links and scroll to the first one
-		const firstLink = links[0];
-		const firstElement = firstLink.element;
-
 		links.forEach(linkInfo => {
 			const link = linkInfo.element;
 			const highlight = document.createElement('div');
@@ -211,12 +198,6 @@ function highlightPosition(line: number, char: number) {
 				setTimeout(() => highlight.remove(), 300);
 			}, 2000);
 		});
-
-		// Scroll to the first highlighted element
-		const pageDiv = firstElement.closest('.pdf-page');
-		if (pageDiv) {
-			pageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-		}
 	}
 }
 
