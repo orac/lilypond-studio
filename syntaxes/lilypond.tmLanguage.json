@@ -5,14 +5,13 @@
   "patterns": [
     { "include": "#comments" },
     { "include": "#strings" },
-    { "include": "#numbers" },
-    { "include": "#keywords" },
-    { "include": "#commands" },
-    { "include": "#notes" },
-    { "include": "#chords" },
+    { "include": "#lyrics" },
     { "include": "#markup" },
+    { "include": "#music" },
     { "include": "#scheme" },
-    { "include": "#operators" }
+    { "include": "#commands" },
+    { "include": "#operators" },
+    { "include": "#declarations" }
   ],
   "repository": {
     "comments": {
@@ -20,14 +19,42 @@
         {
           "name": "comment.block.lilypond",
           "begin": "%\\{",
-          "end": "%\\}",
-          "patterns": [
-            { "include": "#comments" }
-          ]
+          "end": "%\\}"
         },
         {
           "name": "comment.line.percentage.lilypond",
           "match": "%.*$"
+        }
+      ]
+    },
+    "durations": {
+      "patterns": [
+        {
+          "name": "constant.numeric.duration.lilypond",
+          "match": "(1|2|4|8|16|32|64|128|256|512|1024|\\\\breve|\\\\longa)\\.?(\\*\\d+)?\\b"
+        }
+      ]
+    },
+    "lyrics": {
+      "patterns": [
+        {
+          "begin": "(\\\\lyricmode)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "contentName": "string.quoted.other.lyrics.lilypond",
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#markup" },
+            { "include": "#commands" },
+            { "include": "#durations" },
+            { "name": "constant.character.lilypond", "match": "--" }
+          ]
         }
       ]
     },
@@ -46,30 +73,6 @@
         }
       ]
     },
-    "numbers": {
-      "patterns": [
-        {
-          "name": "constant.numeric.lilypond",
-          "match": "\\b\\d+(\\.\\d+)?\\b"
-        }
-      ]
-    },
-    "keywords": {
-      "patterns": [
-        {
-          "name": "keyword.control.lilypond",
-          "match": "\\\\(include|version|sourcefilename|sourcefileline)\\b"
-        },
-        {
-          "name": "keyword.other.lilypond",
-          "match": "\\\\(new|context|with|consists|remove|accepts|alias|defaultchild|denies|name|type|description)\\b"
-        },
-        {
-          "name": "storage.type.lilypond",
-          "match": "\\\\(paper|layout|midi|header|score|book|bookpart)\\b"
-        }
-      ]
-    },
     "commands": {
       "patterns": [
         {
@@ -78,46 +81,146 @@
         }
       ]
     },
-    "notes": {
+    "declarations": {
       "patterns": [
         {
-          "name": "entity.name.tag.note.lilypond",
-          "match": "\\b[a-gr]([ie]?s{1,2}|[ie]?ss)?[',]*\\d*\\.*(\\*\\d+(/\\d+)?)?(!|\\?|\\+|-|_|\\^)?\\b"
-        },
-        {
-          "name": "keyword.other.rest.lilypond",
-          "match": "\\b(r|R|s)\\d*\\.*(\\*\\d+(/\\d+)?)?\\b"
+          "name": "variable.other.declaration.lilypond",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_'`-]*)\\s*=\\s*"
         }
       ]
     },
-    "chords": {
+    "music": {
       "patterns": [
         {
-          "name": "entity.name.tag.chord.lilypond",
+          "name": "constant.language.note.lilypond",
+          "match": "\\b[a-gr]([ie]?s{1,2}|[ie]?ss)?[',]*\\d*\\.*(\\*\\d+(/\\d+)?)?(!|\\?|\\+|-|_|\\^)?\\b"
+        },
+        {
+          "name": "constant.language.rest.lilypond",
+          "match": "\\b(r|R|s)\\d*\\.*(\\*\\d+(/\\d+)?)?\\b"
+        },
+        {
+          "name": "meta.parallel.lilypond",
+          "begin": "<<",
+          "end": ">>",
+          "patterns": [
+            { "include": "#music" },
+            { "include": "#comments" }
+          ]
+        },
+        {
+          "name": "meta.chord.lilypond",
           "begin": "<",
           "end": ">",
           "patterns": [
-            { "include": "#notes" },
-            { "include": "#comments" }
+            { "include": "#music" }
           ]
-        }
+        },
+        { "include": "#durations" },
+        { "include": "#commands" },
+        { "include": "#comments" }
       ]
     },
     "markup": {
       "patterns": [
         {
           "name": "meta.markup.lilypond",
-          "begin": "\\\\markup\\b",
-          "end": "(?=\\}|\\\\[a-zA-Z]+|>>)",
+          "begin": "(\\\\markup)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "contentName": "string.quoted.other",
           "patterns": [
+            { "include": "#markup-commands" },
             { "include": "#strings" },
             { "include": "#comments" },
-            { "include": "#commands" },
             {
               "name": "punctuation.section.braces.lilypond",
               "match": "[{}]"
-            }
+            },
+            { "include": "#commands" }
           ]
+        }
+      ]
+    },
+    "markup-commands": {
+      "patterns": [
+        {
+          "begin": "(\\\\italic)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "contentName": "markup.italic",
+          "patterns": [
+            { "include": "#markup-commands" },
+            { "include": "#strings" },
+            { "include": "#comments" }
+          ]
+        },
+        {
+          "begin": "(\\\\bold)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "contentName": "markup.bold",
+          "patterns": [
+            { "include": "#markup-commands" },
+            { "include": "#strings" },
+            { "include": "#comments" }
+          ]
+        },
+        {
+          "begin": "(\\\\underline)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "contentName": "markup.underline",
+          "patterns": [
+            { "include": "#markup-commands" },
+            { "include": "#strings" },
+            { "include": "#comments" }
+          ]
+        },
+        {
+          "match": "(\\\\italic)\\s+(\\S+)",
+          "captures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "markup.italic" }
+          }
+        },
+        {
+          "match": "(\\\\bold)\\s+(\\S+)",
+          "captures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "markup.bold" }
+          }
+        },
+        {
+          "match": "(\\\\underline)\\s+(\\S+)",
+          "captures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "markup.underline" }
+          }
         }
       ]
     },
@@ -163,11 +266,8 @@
           "patterns": [
             { "include": "#comments" },
             { "include": "#strings" },
-            { "include": "#numbers" },
-            { "include": "#keywords" },
             { "include": "#commands" },
-            { "include": "#notes" },
-            { "include": "#chords" },
+            { "include": "#music" },
             { "include": "#markup" },
             { "include": "#scheme" },
             { "include": "#operators" }
@@ -188,10 +288,6 @@
         {
           "name": "punctuation.section.brackets.lilypond",
           "match": "[\\[\\]]"
-        },
-        {
-          "name": "punctuation.separator.lilypond",
-          "match": "[,;]"
         }
       ]
     }
