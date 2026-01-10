@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { PdfViewerPanel } from './pdfViewer';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -25,21 +26,17 @@ export function activate(context: vscode.ExtensionContext) {
 		if (e.execution.task.definition.type === 'lilypond') {
 			const editor = vscode.window.activeTextEditor;
 			if (editor && editor.document.languageId === 'lilypond') {
-				const filePath = editor.document.uri.fsPath;
-				const fileDir = path.dirname(filePath);
-				const fileName = path.basename(filePath, '.ly');
-				const pdfPath = path.join(fileDir, `${fileName}.pdf`);
-
-				await openPdfPreview(pdfPath, context, editor.document.uri);
+				await checkAndOpenCorrespondingPdf(editor, context);
 			}
 		}
 	});
 
 	context.subscriptions.push(taskEndListener);
 
-	const textEditorChangeListener = vscode.window.onDidChangeActiveTextEditor(editor => {
+	const textEditorChangeListener = vscode.window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor && editor.document.languageId === 'lilypond') {
 			vscode.commands.executeCommand('setContext', 'lilypondFileOpen', true);
+			await checkAndOpenCorrespondingPdf(editor, context);
 		} else {
 			vscode.commands.executeCommand('setContext', 'lilypondFileOpen', false);
 		}
@@ -49,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	if (vscode.window.activeTextEditor?.document.languageId === 'lilypond') {
 		vscode.commands.executeCommand('setContext', 'lilypondFileOpen', true);
+		checkAndOpenCorrespondingPdf(vscode.window.activeTextEditor, context);
 	}
 }
 
@@ -101,6 +99,15 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 	};
 
 	return task;
+}
+
+async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: vscode.ExtensionContext) {
+	const filePath = editor.document.uri.fsPath;
+	const pdfPath = filePath.replace(/\.ly$/, '.pdf');
+
+	if (fs.existsSync(pdfPath)) {
+		await openPdfPreview(pdfPath, context, editor.document.uri);
+	}
 }
 
 async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext, sourceUri?: vscode.Uri) {
