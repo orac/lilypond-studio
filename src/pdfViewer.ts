@@ -4,24 +4,24 @@ import * as fs from 'fs';
 
 export class PdfViewerPanel {
 	public static currentPanel: PdfViewerPanel | undefined;
-	private readonly _panel: vscode.WebviewPanel;
-	private readonly _extensionUri: vscode.Uri;
-	private _pdfUri: vscode.Uri;
-	private _sourceUri: vscode.Uri | undefined;
-	private _disposables: vscode.Disposable[] = [];
-	private _editorChangeListener: vscode.Disposable | undefined;
+	private readonly panel: vscode.WebviewPanel;
+	private readonly extensionUri: vscode.Uri;
+	private pdfUri: vscode.Uri;
+	private sourceUri: vscode.Uri | undefined;
+	private disposables: vscode.Disposable[] = [];
+	private editorChangeListener: vscode.Disposable | undefined;
 
 	public static createOrShow(extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
 		const column = vscode.ViewColumn.Beside;
 
 		// If we already have a panel, show it and update the PDF
 		if (PdfViewerPanel.currentPanel) {
-			PdfViewerPanel.currentPanel._pdfUri = pdfUri;
-			PdfViewerPanel.currentPanel._sourceUri = sourceUri;
+			PdfViewerPanel.currentPanel.pdfUri = pdfUri;
+			PdfViewerPanel.currentPanel.sourceUri = sourceUri;
 
 			// Update localResourceRoots to include the new PDF directory
 			const pdfDir = vscode.Uri.file(path.dirname(pdfUri.fsPath));
-			PdfViewerPanel.currentPanel._panel.webview.options = {
+			PdfViewerPanel.currentPanel.panel.webview.options = {
 				enableScripts: true,
 				localResourceRoots: [
 					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
@@ -30,9 +30,9 @@ export class PdfViewerPanel {
 				]
 			};
 
-			PdfViewerPanel.currentPanel._panel.reveal(column, true);
-			PdfViewerPanel.currentPanel._update();
-			PdfViewerPanel.currentPanel._setupEditorSync();
+			PdfViewerPanel.currentPanel.panel.reveal(column, true);
+			PdfViewerPanel.currentPanel.update();
+			PdfViewerPanel.currentPanel.setupEditorSync();
 			return;
 		}
 
@@ -59,31 +59,31 @@ export class PdfViewerPanel {
 	}
 
 	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
-		this._panel = panel;
-		this._extensionUri = extensionUri;
-		this._pdfUri = pdfUri;
-		this._sourceUri = sourceUri;
+		this.panel = panel;
+		this.extensionUri = extensionUri;
+		this.pdfUri = pdfUri;
+		this.sourceUri = sourceUri;
 
 		// Set the webview's initial html content
-		this._update();
+		this.update();
 
 		// Set up editor sync for forward navigation
-		this._setupEditorSync();
+		this.setupEditorSync();
 
 		// Listen for when the panel is disposed
 		// This happens when the user closes the panel or when the panel is closed programmatically
-		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+		this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
 		// Handle messages from the webview
-		this._panel.webview.onDidReceiveMessage(
+		this.panel.webview.onDidReceiveMessage(
 			message => {
 				switch (message.type) {
 					case 'click':
-						this._handlePdfClick(message.uri);
+						this.handlePdfClick(message.uri);
 						return;
 					case 'ready':
 						// PDF is loaded and ready for sync
-						this._syncCurrentPosition();
+						this.syncCurrentPosition();
 						return;
 					case 'error':
 						vscode.window.showErrorMessage(`PDF Viewer: ${message.message}`);
@@ -91,7 +91,7 @@ export class PdfViewerPanel {
 				}
 			},
 			null,
-			this._disposables
+			this.disposables
 		);
 	}
 
@@ -99,23 +99,23 @@ export class PdfViewerPanel {
 		PdfViewerPanel.currentPanel = undefined;
 
 		// Clean up editor sync listener
-		if (this._editorChangeListener) {
-			this._editorChangeListener.dispose();
-			this._editorChangeListener = undefined;
+		if (this.editorChangeListener) {
+			this.editorChangeListener.dispose();
+			this.editorChangeListener = undefined;
 		}
 
 		// Clean up our resources
-		this._panel.dispose();
+		this.panel.dispose();
 
-		while (this._disposables.length) {
-			const disposable = this._disposables.pop();
+		while (this.disposables.length) {
+			const disposable = this.disposables.pop();
 			if (disposable) {
 				disposable.dispose();
 			}
 		}
 	}
 
-	private async _handlePdfClick(uri: string) {
+	private async handlePdfClick(uri: string) {
 		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
 		if (!uri.startsWith('textedit://')) {
 			return;
@@ -166,24 +166,24 @@ export class PdfViewerPanel {
 		}
 	}
 
-	private _setupEditorSync() {
+	private setupEditorSync() {
 		// Clean up existing listener
-		if (this._editorChangeListener) {
-			this._editorChangeListener.dispose();
+		if (this.editorChangeListener) {
+			this.editorChangeListener.dispose();
 		}
 
 		// Listen to selection changes in the editor
-		this._editorChangeListener = vscode.window.onDidChangeTextEditorSelection(e => {
+		this.editorChangeListener = vscode.window.onDidChangeTextEditorSelection(e => {
 			// Only sync if the active editor is the source file
-			if (this._sourceUri && e.textEditor.document.uri.fsPath === this._sourceUri.fsPath) {
-				this._syncCurrentPosition();
+			if (this.sourceUri && e.textEditor.document.uri.fsPath === this.sourceUri.fsPath) {
+				this.syncCurrentPosition();
 			}
 		});
 	}
 
-	private _syncCurrentPosition() {
+	private syncCurrentPosition() {
 		const editor = vscode.window.activeTextEditor;
-		if (!editor || !this._sourceUri || editor.document.uri.fsPath !== this._sourceUri.fsPath) {
+		if (!editor || !this.sourceUri || editor.document.uri.fsPath !== this.sourceUri.fsPath) {
 			return;
 		}
 
@@ -192,44 +192,44 @@ export class PdfViewerPanel {
 		const char = position.character;
 
 		// Send sync message to webview
-		this._panel.webview.postMessage({
+		this.panel.webview.postMessage({
 			type: 'sync',
 			line: line,
 			char: char
 		});
 	}
 
-	private _update() {
-		const webview = this._panel.webview;
-		this._panel.webview.html = this._getHtmlForWebview(webview);
+	private update() {
+		const webview = this.panel.webview;
+		this.panel.webview.html = this.getHtmlForWebview(webview);
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview): string {
+	private getHtmlForWebview(webview: vscode.Webview): string {
 		// Get URIs for PDF.js resources
 		const pdfjsUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this._extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.mjs')
+			vscode.Uri.joinPath(this.extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.mjs')
 		);
 		const pdfjsWorkerUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this._extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.mjs')
+			vscode.Uri.joinPath(this.extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.mjs')
 		);
 
 		// Get URI for the PDF file
-		const pdfFileUri = webview.asWebviewUri(this._pdfUri);
+		const pdfFileUri = webview.asWebviewUri(this.pdfUri);
 
 		// Get URIs for viewer resources
 		const viewerScriptUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this._extensionUri, 'dist', 'viewer.js')
+			vscode.Uri.joinPath(this.extensionUri, 'dist', 'viewer.js')
 		);
 
 		// Read the HTML template
-		const htmlPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'viewer', 'viewer.html');
+		const htmlPath = vscode.Uri.joinPath(this.extensionUri, 'src', 'viewer', 'viewer.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
 
 		// Prepare configuration as JSON
 		const config = {
 			pdfUrl: pdfFileUri.toString(),
 			pdfjsUri: pdfjsUri.toString(),
-			pdfjsWorkerUri: pdfjsWorkerUri.toString()
+			pdfjsWorkerUri: pdfjsWorkerUri.toString(),
 		};
 
 		// Replace placeholders in the HTML template
