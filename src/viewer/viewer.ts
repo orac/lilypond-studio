@@ -94,7 +94,7 @@ async function renderPdf() {
 					const x = transform[0] * rect[0] + transform[4];
 					const y = transform[3] * rect[3] + transform[5];
 					const width = (rect[2] - rect[0]) * transform[0];
-					const height = (rect[3] - rect[1]) * transform[3];
+					const height = (rect[1] - rect[3]) * transform[3];
 
 					const link = document.createElement('a');
 					link.style.left = x + 'px';
