@@ -26,8 +26,8 @@ enum ZoomMode {
 	Actual = 'actual'
 }
 
-let currentZoomMode: ZoomMode = ZoomMode.Custom;
-let currentScale = 1.5; // Default scale
+let currentZoomMode: ZoomMode = ZoomMode.FitPage;
+let currentScale = 1.5; // Default scale (will be calculated based on zoom mode)
 let pdfDocument: any = null;
 
 interface TexteditLink {
@@ -44,18 +44,21 @@ const linksByPosition = new Map<string, TexteditLink[]>();
 let pdfjsLib;
 
 function updateZoomDisplay() {
-	if (currentZoomMode === ZoomMode.FitWidth) {
-		zoomLevelDisplay.textContent = 'Fit Width';
-	} else if (currentZoomMode === ZoomMode.FitPage) {
-		zoomLevelDisplay.textContent = 'Fit Page';
-	} else {
-		zoomLevelDisplay.textContent = Math.round(currentScale * 100) + '%';
-	}
+	// Always show percentage
+	zoomLevelDisplay.textContent = Math.round(currentScale * 100) + '%';
 
-	// Update active state on buttons
-	document.getElementById('zoom-fit-width')!.classList.toggle('active', currentZoomMode === ZoomMode.FitWidth);
-	document.getElementById('zoom-fit-page')!.classList.toggle('active', currentZoomMode === ZoomMode.FitPage);
-	document.getElementById('zoom-100')!.classList.toggle('active', currentZoomMode === ZoomMode.Actual && currentScale === 1.0);
+	// Grey out the percentage when in fit modes
+	const isInFitMode = currentZoomMode === ZoomMode.FitWidth || currentZoomMode === ZoomMode.FitPage;
+	zoomLevelDisplay.classList.toggle('fit-mode', isInFitMode);
+
+	// Update active state on buttons (using appearance attribute for vscode-button)
+	const fitWidthBtn = document.getElementById('zoom-fit-width')!;
+	const fitPageBtn = document.getElementById('zoom-fit-page')!;
+	const zoom100Btn = document.getElementById('zoom-100')!;
+
+	fitWidthBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitWidth ? 'primary' : 'secondary');
+	fitPageBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitPage ? 'primary' : 'secondary');
+	zoom100Btn.setAttribute('appearance', (currentZoomMode === ZoomMode.Actual && currentScale === 1.0) ? 'primary' : 'secondary');
 }
 
 function calculateFitWidthScale(pageWidth: number): number {
@@ -445,12 +448,17 @@ window.addEventListener('message', event => {
 			highlightPosition(message.line, message.char);
 			break;
 		case 'reload':
+			// Save current state before clearing
+			saveState();
 			// Clear the container and reload the PDF
 			container.innerHTML = '';
 			loading.style.display = 'block';
 			loading.textContent = 'Loading PDF...';
 			linksByPosition.clear();
+			// Restore state before rendering so zoom mode is preserved
+			restoreState();
 			renderPdf().then(() => {
+				// Restore scroll position after render completes
 				restoreState();
 			});
 			break;

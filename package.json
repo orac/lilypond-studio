@@ -39,7 +39,9 @@
       {
         "scopeName": "source.lilypond-scheme.injection",
         "path": "./syntaxes/lilypond-scheme-injection.tmLanguage.json",
-        "injectTo": ["meta.embedded.block.scheme.lilypond"],
+        "injectTo": [
+          "meta.embedded.block.scheme.lilypond"
+        ],
         "embeddedLanguages": {
           "source.lilypond.embedded.scheme": "lilypond"
         }
@@ -128,6 +130,8 @@
     "typescript-eslint": "^8.48.1"
   },
   "dependencies": {
+    "@vscode/codicons": "^0.0.44",
+    "@vscode/webview-ui-toolkit": "^1.4.0",
     "pdfjs-dist": "^5.4.530"
   }
 }

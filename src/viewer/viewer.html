@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src {{cspSource}}; style-src {{cspSource}} 'unsafe-inline'; img-src {{cspSource}} data:; connect-src {{cspSource}}; worker-src {{cspSource}} blob:;">
+	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src {{cspSource}}; style-src {{cspSource}} 'unsafe-inline'; img-src {{cspSource}} data:; connect-src {{cspSource}}; worker-src {{cspSource}} blob:; font-src {{cspSource}};">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>PDF Preview</title>
+	<link rel="stylesheet" href="{{codiconsUri}}">
+	<script type="module" src="{{toolkitUri}}"></script>
 	<style>
 		body {
 			margin: 0;
@@ -69,64 +71,54 @@
 			top: 0;
 			left: 0;
 			right: 0;
-			background-color: #2d2d30;
-			border-bottom: 1px solid #3e3e42;
-			padding: 8px 12px;
+			background-color: var(--vscode-editorGroupHeader-tabsBackground);
+			border-bottom: 1px solid var(--vscode-editorGroup-border);
+			padding: 4px 8px;
 			display: flex;
-			gap: 8px;
+			gap: 4px;
 			align-items: center;
 			z-index: 1000;
 			height: 35px;
 			box-sizing: border-box;
 		}
-		#zoom-controls button {
-			background-color: #3c3c3c;
-			color: #cccccc;
-			border: 1px solid #3e3e42;
-			border-radius: 2px;
-			padding: 4px 12px;
-			cursor: pointer;
-			font-size: 13px;
-			transition: background-color 0.1s;
-			height: 24px;
-			line-height: 1;
+		#zoom-controls vscode-button {
+			height: 22px;
 		}
-		#zoom-controls button:hover {
-			background-color: #505050;
-			border-color: #555;
-		}
-		#zoom-controls button:active {
-			background-color: #2c2c2c;
-		}
-		#zoom-controls button.active {
-			background-color: #094771;
-			border-color: #007acc;
-			color: #ffffff;
+		#zoom-controls vscode-button.icon-only {
+			padding: 0;
+			width: 22px;
 		}
 		#zoom-level {
-			color: #cccccc;
+			color: var(--vscode-foreground);
 			font-size: 12px;
-			min-width: 60px;
+			min-width: 50px;
 			text-align: center;
 			padding: 0 8px;
 		}
+		#zoom-level.fit-mode {
+			opacity: 0.6;
+		}
 		.zoom-separator {
 			width: 1px;
-			height: 20px;
-			background-color: #3e3e42;
+			height: 16px;
+			background-color: var(--vscode-editorGroup-border);
 			margin: 0 4px;
 		}
 	</style>
 </head>
 <body>
 	<div id="zoom-controls">
-		<button id="zoom-out" title="Zoom Out (Ctrl+-)">−</button>
-		<button id="zoom-in" title="Zoom In (Ctrl++)">+</button>
+		<vscode-button id="zoom-out" appearance="icon" aria-label="Zoom Out (Ctrl+-)" title="Zoom Out (Ctrl+-)">
+			<span class="codicon codicon-zoom-out"></span>
+		</vscode-button>
+		<vscode-button id="zoom-in" appearance="icon" aria-label="Zoom In (Ctrl++)" title="Zoom In (Ctrl++)">
+			<span class="codicon codicon-zoom-in"></span>
+		</vscode-button>
 		<span id="zoom-level">100%</span>
 		<div class="zoom-separator"></div>
-		<button id="zoom-fit-width" title="Fit Width (Ctrl+0)">Fit Width</button>
-		<button id="zoom-fit-page" title="Fit Page (Ctrl+1)">Fit Page</button>
-		<button id="zoom-100" title="100% (Ctrl+2)">100%</button>
+		<vscode-button id="zoom-fit-width" title="Fit Width (Ctrl+0)">Fit Width</vscode-button>
+		<vscode-button id="zoom-fit-page" title="Fit Page (Ctrl+1)">Fit Page</vscode-button>
+		<vscode-button id="zoom-100" title="100% (Ctrl+2)">100%</vscode-button>
 	</div>
 	<div id="loading">Loading PDF...</div>
 	<div id="pdf-container"></div>

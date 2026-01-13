@@ -30,6 +30,8 @@ export class PdfViewerPanel {
 				enableScripts: true,
 				localResourceRoots: [
 					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
 					vscode.Uri.joinPath(extensionUri, 'dist'),
 					pdfDir
 				]
@@ -55,6 +57,8 @@ export class PdfViewerPanel {
 				retainContextWhenHidden: true,
 				localResourceRoots: [
 					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
 					vscode.Uri.joinPath(extensionUri, 'dist'),
 					pdfDir
 				]
@@ -308,6 +312,16 @@ export class PdfViewerPanel {
 			vscode.Uri.joinPath(this.extensionUri, 'dist', 'viewer.js')
 		);
 
+		// Get URI for the webview UI toolkit
+		const toolkitUri = webview.asWebviewUri(
+			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit', 'dist', 'toolkit.js')
+		);
+
+		// Get URI for Codicons CSS
+		const codiconsUri = webview.asWebviewUri(
+			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css')
+		);
+
 		// Read the HTML template
 		const htmlPath = vscode.Uri.joinPath(this.extensionUri, 'src', 'viewer', 'viewer.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
@@ -322,6 +336,8 @@ export class PdfViewerPanel {
 		// Replace placeholders in the HTML template
 		return htmlContent
 			.replace(/{{cspSource}}/g, webview.cspSource)
+			.replace('{{codiconsUri}}', codiconsUri.toString())
+			.replace('{{toolkitUri}}', toolkitUri.toString())
 			.replace('{{viewerScriptUri}}', viewerScriptUri.toString())
 			.replace('{{viewerConfig}}', JSON.stringify(config).replace(/"/g, '&quot;'));
 	}
