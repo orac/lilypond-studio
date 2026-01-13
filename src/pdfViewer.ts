@@ -11,6 +11,7 @@ export class PdfViewerPanel {
 	private disposables: vscode.Disposable[] = [];
 	private editorChangeListener: vscode.Disposable | undefined;
 	private hoverDecorationType: vscode.TextEditorDecorationType | undefined;
+	private fileWatcher: vscode.FileSystemWatcher | undefined;
 
 	public static createOrShow(extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
 		const column = vscode.ViewColumn.Beside;
@@ -37,6 +38,7 @@ export class PdfViewerPanel {
 			PdfViewerPanel.currentPanel.panel.reveal(column, true);
 			PdfViewerPanel.currentPanel.update();
 			PdfViewerPanel.currentPanel.setupEditorSync();
+			PdfViewerPanel.currentPanel.setupFileWatcher();
 			return;
 		}
 
@@ -73,6 +75,9 @@ export class PdfViewerPanel {
 
 		// Set up editor sync for forward navigation
 		this.setupEditorSync();
+
+		// Set up file watcher for PDF changes
+		this.setupFileWatcher();
 
 		// Listen for when the panel is disposed
 		// This happens when the user closes the panel or when the panel is closed programmatically
@@ -115,6 +120,12 @@ export class PdfViewerPanel {
 		if (this.editorChangeListener) {
 			this.editorChangeListener.dispose();
 			this.editorChangeListener = undefined;
+		}
+
+		// Clean up file watcher
+		if (this.fileWatcher) {
+			this.fileWatcher.dispose();
+			this.fileWatcher = undefined;
 		}
 
 		// Clean up our resources
@@ -250,6 +261,28 @@ export class PdfViewerPanel {
 			type: 'sync',
 			line: line,
 			char: char
+		});
+	}
+
+	private setupFileWatcher() {
+		// Clean up existing watcher
+		if (this.fileWatcher) {
+			this.fileWatcher.dispose();
+		}
+
+		// Create a file watcher for the PDF file
+		const pattern = new vscode.RelativePattern(this.pdfUri, '*');
+		this.fileWatcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+		// Reload the PDF when it changes
+		this.fileWatcher.onDidChange(() => {
+			// Send reload message to webview
+			this.panel.webview.postMessage({ type: 'reload' });
+		});
+
+		// Handle file deletion
+		this.fileWatcher.onDidDelete(() => {
+			vscode.window.showWarningMessage('PDF file was deleted');
 		});
 	}
 

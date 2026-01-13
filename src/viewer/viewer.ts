@@ -12,9 +12,23 @@ const config = JSON.parse(configElement?.dataset.config || '{}');
 
 const container = document.getElementById('pdf-container')!;
 const loading = document.getElementById('loading')!;
+const zoomLevelDisplay = document.getElementById('zoom-level')!;
+const zoomControls = document.getElementById('zoom-controls')!;
 
 console.log('Webview loaded');
 console.log('PDF URL:', config.pdfUrl);
+
+// Zoom state
+enum ZoomMode {
+	Custom = 'custom',
+	FitWidth = 'fit-width',
+	FitPage = 'fit-page',
+	Actual = 'actual'
+}
+
+let currentZoomMode: ZoomMode = ZoomMode.Custom;
+let currentScale = 1.5; // Default scale
+let pdfDocument: any = null;
 
 interface TexteditLink {
 	element: HTMLAnchorElement;
@@ -29,6 +43,34 @@ const linksByPosition = new Map<string, TexteditLink[]>();
 
 let pdfjsLib;
 
+function updateZoomDisplay() {
+	if (currentZoomMode === ZoomMode.FitWidth) {
+		zoomLevelDisplay.textContent = 'Fit Width';
+	} else if (currentZoomMode === ZoomMode.FitPage) {
+		zoomLevelDisplay.textContent = 'Fit Page';
+	} else {
+		zoomLevelDisplay.textContent = Math.round(currentScale * 100) + '%';
+	}
+
+	// Update active state on buttons
+	document.getElementById('zoom-fit-width')!.classList.toggle('active', currentZoomMode === ZoomMode.FitWidth);
+	document.getElementById('zoom-fit-page')!.classList.toggle('active', currentZoomMode === ZoomMode.FitPage);
+	document.getElementById('zoom-100')!.classList.toggle('active', currentZoomMode === ZoomMode.Actual && currentScale === 1.0);
+}
+
+function calculateFitWidthScale(pageWidth: number): number {
+	const containerWidth = container.clientWidth - 40; // Account for padding
+	return containerWidth / pageWidth;
+}
+
+function calculateFitPageScale(pageWidth: number, pageHeight: number): number {
+	const containerWidth = container.clientWidth - 40;
+	const containerHeight = container.clientHeight - 40;
+	const widthScale = containerWidth / pageWidth;
+	const heightScale = containerHeight / pageHeight;
+	return Math.min(widthScale, heightScale);
+}
+
 async function renderPdf() {
 	try {
 		pdfjsLib = await import(config.pdfjsUri);
@@ -38,15 +80,33 @@ async function renderPdf() {
 
 		const loadingTask = pdfjsLib.getDocument(config.pdfUrl);
 		const pdf = await loadingTask.promise;
+		pdfDocument = pdf;
 
 		loading.style.display = 'none';
+		zoomControls.style.display = 'flex';
+
+		// Get first page to calculate scales
+		const firstPage = await pdf.getPage(1);
+		const baseViewport = firstPage.getViewport({ scale: 1.0 });
+
+		// Calculate initial scale based on zoom mode
+		let scale = currentScale;
+		if (currentZoomMode === ZoomMode.FitWidth) {
+			scale = calculateFitWidthScale(baseViewport.width);
+			currentScale = scale;
+		} else if (currentZoomMode === ZoomMode.FitPage) {
+			scale = calculateFitPageScale(baseViewport.width, baseViewport.height);
+			currentScale = scale;
+		}
+
+		updateZoomDisplay();
 
 		// Render each page
 		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
 			const page = await pdf.getPage(pageNum);
 
 			// Calculate scale for comfortable viewing
-			const viewport = page.getViewport({ scale: 1.5 });
+			const viewport = page.getViewport({ scale: scale });
 
 			// Create page container
 			const pageDiv = document.createElement('div');
@@ -214,11 +274,59 @@ function highlightPosition(line: number, char: number) {
 	}
 }
 
+// Zoom functions
+function setZoom(scale: number, mode: ZoomMode) {
+	currentScale = scale;
+	currentZoomMode = mode;
+	reRenderPdf();
+}
+
+function zoomIn() {
+	const newScale = Math.min(currentScale * 1.2, 5.0);
+	setZoom(newScale, ZoomMode.Custom);
+}
+
+function zoomOut() {
+	const newScale = Math.max(currentScale / 1.2, 0.1);
+	setZoom(newScale, ZoomMode.Custom);
+}
+
+function setZoomFitWidth() {
+	if (!pdfDocument) {
+		return;
+	}
+	currentZoomMode = ZoomMode.FitWidth;
+	reRenderPdf();
+}
+
+function setZoomFitPage() {
+	if (!pdfDocument) {
+		return;
+	}
+	currentZoomMode = ZoomMode.FitPage;
+	reRenderPdf();
+}
+
+function setZoom100() {
+	setZoom(1.0, ZoomMode.Actual);
+}
+
+function reRenderPdf() {
+	// Clear container and re-render with new scale
+	container.innerHTML = '';
+	linksByPosition.clear();
+	renderPdf().then(() => {
+		restoreState();
+	});
+}
+
 // State persistence
 function saveState() {
 	const state = {
 		scrollTop: container.scrollTop,
-		scrollLeft: container.scrollLeft
+		scrollLeft: container.scrollLeft,
+		scale: currentScale,
+		zoomMode: currentZoomMode
 	};
 	vscode.setState(state);
 }
@@ -232,6 +340,12 @@ function restoreState() {
 		if (state.scrollLeft !== undefined) {
 			container.scrollLeft = state.scrollLeft;
 		}
+		if (state.scale !== undefined) {
+			currentScale = state.scale;
+		}
+		if (state.zoomMode !== undefined) {
+			currentZoomMode = state.zoomMode;
+		}
 	}
 }
 
@@ -240,12 +354,105 @@ container.addEventListener('scroll', () => {
 	saveState();
 });
 
+// Zoom button event listeners
+document.getElementById('zoom-in')!.addEventListener('click', zoomIn);
+document.getElementById('zoom-out')!.addEventListener('click', zoomOut);
+document.getElementById('zoom-fit-width')!.addEventListener('click', setZoomFitWidth);
+document.getElementById('zoom-fit-page')!.addEventListener('click', setZoomFitPage);
+document.getElementById('zoom-100')!.addEventListener('click', setZoom100);
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+	// Ctrl/Cmd + Plus/Equals for zoom in
+	if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+		e.preventDefault();
+		zoomIn();
+	}
+	// Ctrl/Cmd + Minus for zoom out
+	else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+		e.preventDefault();
+		zoomOut();
+	}
+	// Ctrl/Cmd + 0 for fit width
+	else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+		e.preventDefault();
+		setZoomFitWidth();
+	}
+	// Ctrl/Cmd + 1 for fit page
+	else if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+		e.preventDefault();
+		setZoomFitPage();
+	}
+	// Ctrl/Cmd + 2 for 100%
+	else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+		e.preventDefault();
+		setZoom100();
+	}
+});
+
+// Mouse wheel zoom with Ctrl/Cmd
+container.addEventListener('wheel', (e) => {
+	if (e.ctrlKey || e.metaKey) {
+		e.preventDefault();
+		if (e.deltaY < 0) {
+			zoomIn();
+		} else if (e.deltaY > 0) {
+			zoomOut();
+		}
+	}
+}, { passive: false });
+
+// Pinch-to-zoom support for touchpads
+let lastPinchDistance = 0;
+container.addEventListener('gesturestart', (e: any) => {
+	e.preventDefault();
+	lastPinchDistance = 0;
+});
+
+container.addEventListener('gesturechange', (e: any) => {
+	e.preventDefault();
+	if (e.scale > 1) {
+		zoomIn();
+	} else if (e.scale < 1) {
+		zoomOut();
+	}
+});
+
+container.addEventListener('gestureend', (e: any) => {
+	e.preventDefault();
+});
+
+// Window resize handler for fit modes
+let resizeTimeout: number | undefined;
+window.addEventListener('resize', () => {
+	// Only react to resize in fit modes
+	if (currentZoomMode === ZoomMode.FitWidth || currentZoomMode === ZoomMode.FitPage) {
+		// Debounce resize events to avoid too many re-renders
+		if (resizeTimeout) {
+			clearTimeout(resizeTimeout);
+		}
+		resizeTimeout = window.setTimeout(() => {
+			reRenderPdf();
+		}, 200);
+	}
+});
+
 // Listen for sync messages from VS Code
 window.addEventListener('message', event => {
 	const message = event.data;
 	switch (message.type) {
 		case 'sync':
 			highlightPosition(message.line, message.char);
+			break;
+		case 'reload':
+			// Clear the container and reload the PDF
+			container.innerHTML = '';
+			loading.style.display = 'block';
+			loading.textContent = 'Loading PDF...';
+			linksByPosition.clear();
+			renderPdf().then(() => {
+				restoreState();
+			});
 			break;
 	}
 });

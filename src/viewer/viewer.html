@@ -14,7 +14,8 @@
 		}
 		#pdf-container {
 			width: 100%;
-			height: 100vh;
+			height: calc(100vh - 35px);
+			margin-top: 35px;
 			overflow: auto;
 			display: flex;
 			flex-direction: column;
@@ -58,10 +59,75 @@
 			color: white;
 			text-align: center;
 			padding: 50px;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+		#zoom-controls {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			background-color: #2d2d30;
+			border-bottom: 1px solid #3e3e42;
+			padding: 8px 12px;
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			z-index: 1000;
+			height: 35px;
+			box-sizing: border-box;
+		}
+		#zoom-controls button {
+			background-color: #3c3c3c;
+			color: #cccccc;
+			border: 1px solid #3e3e42;
+			border-radius: 2px;
+			padding: 4px 12px;
+			cursor: pointer;
+			font-size: 13px;
+			transition: background-color 0.1s;
+			height: 24px;
+			line-height: 1;
+		}
+		#zoom-controls button:hover {
+			background-color: #505050;
+			border-color: #555;
+		}
+		#zoom-controls button:active {
+			background-color: #2c2c2c;
+		}
+		#zoom-controls button.active {
+			background-color: #094771;
+			border-color: #007acc;
+			color: #ffffff;
+		}
+		#zoom-level {
+			color: #cccccc;
+			font-size: 12px;
+			min-width: 60px;
+			text-align: center;
+			padding: 0 8px;
+		}
+		.zoom-separator {
+			width: 1px;
+			height: 20px;
+			background-color: #3e3e42;
+			margin: 0 4px;
 		}
 	</style>
 </head>
 <body>
+	<div id="zoom-controls">
+		<button id="zoom-out" title="Zoom Out (Ctrl+-)">−</button>
+		<button id="zoom-in" title="Zoom In (Ctrl++)">+</button>
+		<span id="zoom-level">100%</span>
+		<div class="zoom-separator"></div>
+		<button id="zoom-fit-width" title="Fit Width (Ctrl+0)">Fit Width</button>
+		<button id="zoom-fit-page" title="Fit Page (Ctrl+1)">Fit Page</button>
+		<button id="zoom-100" title="100% (Ctrl+2)">100%</button>
+	</div>
 	<div id="loading">Loading PDF...</div>
 	<div id="pdf-container"></div>
 	<div id="viewer-config" data-config="{{viewerConfig}}" style="display: none;"></div>
