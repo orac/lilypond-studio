@@ -176,33 +176,45 @@ export class PdfViewerPanel {
 		}
 	}
 
-	/** Click handler for links in the PDF
+	/** Parse a textedit:// URI into its constituent parts
 	 * 
-	 * In particular, it handles LilyPond "point-and-click" links of the form:
-	 * textedit:///path/to/file.ly:line:char:char
+	 * @return The parsed components, or null if parsing failed or `uri` is not a textedit:// URI
 	 */
-	private async handlePdfClick(uri: string) {
+	private parseTexteditUri(uri: string): { filePath: string; line: number; charStart: number; charEnd: number } | null {
 		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
 		if (!uri.startsWith('textedit://')) {
+			return null;
+		}
+
+		// Match the textedit:// URI format
+		// Captures: file path, line number, start char, end char
+		const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
+		if (!match) {
+			return null;
+		}
+
+		const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
+
+		// Decode URL-encoded characters (like %20 for spaces)
+		const filePath = decodeURIComponent(encodedFilePath);
+		const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
+
+		return { filePath, line, charStart, charEnd };
+	}
+
+	/** Click handler for links in the PDF
+	 */
+	private async handlePdfClick(uri: string) {
+		const parsed = this.parseTexteditUri(uri);
+		if (!parsed) {
 			return;
 		}
 
 		try {
-			// Match the textedit:// URI format
-			// Captures: file path, line number, start char, end char
-			const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
-			if (!match) {
-				throw new Error('Invalid textedit URI format');
-			}
-
-			const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
-
-			// Decode URL-encoded characters (like %20 for spaces)
-			const decodedFilePath = decodeURIComponent(encodedFilePath);
-			const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
+			const { filePath, line, charStart, charEnd } = parsed;
 
 			// Open the source file
-			const fileUri = vscode.Uri.file(decodedFilePath);
+			const fileUri = vscode.Uri.file(filePath);
 			const document = await vscode.workspace.openTextDocument(fileUri);
 			const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
 
@@ -225,26 +237,16 @@ export class PdfViewerPanel {
 	 * Adds a box around the link, and sends the link target to the source editor to add a decoration there.
 	 */
 	private async handlePdfHover(uri: string) {
-		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
-		if (!uri.startsWith('textedit://')) {
+		const parsed = this.parseTexteditUri(uri);
+		if (!parsed) {
 			return;
 		}
 
 		try {
-			// Match the textedit:// URI format
-			const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
-			if (!match) {
-				return;
-			}
-
-			const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
-
-			// Decode URL-encoded characters (like %20 for spaces)
-			const decodedFilePath = decodeURIComponent(encodedFilePath);
-			const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
+			const { filePath, line, charStart, charEnd } = parsed;
 
 			// Check if this is the current source file
-			const fileUri = vscode.Uri.file(decodedFilePath);
+			const fileUri = vscode.Uri.file(filePath);
 			const editor = vscode.window.activeTextEditor;
 
 			if (!editor || editor.document.uri.fsPath !== fileUri.fsPath) {
