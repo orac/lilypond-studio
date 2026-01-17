@@ -379,21 +379,6 @@ document.addEventListener('keydown', (e) => {
 		e.preventDefault();
 		zoomOut();
 	}
-	// Ctrl/Cmd + 0 for fit width
-	else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-		e.preventDefault();
-		setZoomFitWidth();
-	}
-	// Ctrl/Cmd + 1 for fit page
-	else if ((e.ctrlKey || e.metaKey) && e.key === '1') {
-		e.preventDefault();
-		setZoomFitPage();
-	}
-	// Ctrl/Cmd + 2 for 100%
-	else if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-		e.preventDefault();
-		setZoom100();
-	}
 });
 
 // Mouse wheel zoom with Ctrl/Cmd
