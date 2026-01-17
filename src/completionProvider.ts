@@ -33,6 +33,8 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 			const content = fs.readFileSync(wordsFilePath, 'utf-8');
 			const lines = content.split(/\r?\n/);
 
+			const version = this.versionManager.getVersion();
+
 			this.completionItems = lines
 				.map(line => line.trim())
 				.filter(line => line.length > 0)
@@ -40,12 +42,28 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 					// Un-escape doubled backslashes: \\ -> \
 					const unescaped = word.replace(/\\\\/g, '\\');
 
+					// Special case for \version - insert snippet with detected version
+					if (unescaped === '\\version' && version) {
+						const item = new vscode.CompletionItem(
+							'\\version',
+							vscode.CompletionItemKind.Snippet
+						);
+
+						// Use a snippet to insert \version "x.y.z"
+						item.insertText = new vscode.SnippetString(`\\version "\${1:${version}}"`);
+						item.detail = 'LilyPond version directive';
+						item.documentation = new vscode.MarkdownString(
+							`Insert version directive with current LilyPond version (${version})`
+						);
+
+						return item;
+					}
+
 					const item = new vscode.CompletionItem(
 						unescaped,
 						vscode.CompletionItemKind.Keyword
 					);
 
-					// Set the text to insert (without the leading backslash if user already typed it)
 					item.insertText = unescaped;
 
 					// Add detail to show this is a LilyPond command
@@ -101,7 +119,36 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 		token: vscode.CancellationToken,
 		context: vscode.CompletionContext
 	): vscode.CompletionItem[] {
-		return this.completionItems;
+		// Determine the range to replace
+		const lineText = document.lineAt(position.line).text;
+
+		// Find the start of the word (including backslash if present)
+		let wordStart = position.character;
+		for (let i = position.character - 1; i >= 0; i--) {
+			const char = lineText[i];
+			if (char === '\\' || /[a-zA-Z]/.test(char)) {
+				wordStart = i;
+			} else {
+				break;
+			}
+		}
+
+		const range = new vscode.Range(
+			position.line,
+			wordStart,
+			position.line,
+			position.character
+		);
+
+		// Clone completion items with the appropriate range
+		return this.completionItems.map(item => {
+			const newItem = new vscode.CompletionItem(item.label, item.kind);
+			newItem.insertText = item.insertText;
+			newItem.detail = item.detail;
+			newItem.documentation = item.documentation;
+			newItem.range = range;
+			return newItem;
+		});
 	}
 }
 
