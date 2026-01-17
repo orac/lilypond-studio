@@ -6,18 +6,20 @@ import { PdfCustomEditorProvider } from './pdfCustomEditor';
 import { VersionManager } from './versionManager';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
 import { registerVersionDiagnostics } from './versionDiagnostics';
+import { registerCompletionProvider } from './completionProvider';
 
 export function activate(context: vscode.ExtensionContext) {
 	// Initialize version manager and detect LilyPond version
 	const versionManager = VersionManager.getInstance();
 	const diagnosticsProvider = registerVersionDiagnostics(context);
+	const completionProvider = registerCompletionProvider(context);
 
-	initializeVersion(versionManager, diagnosticsProvider);
+	initializeVersion(versionManager, diagnosticsProvider, completionProvider);
 
 	// Listen for configuration changes
 	const configChangeListener = vscode.workspace.onDidChangeConfiguration(async (e) => {
 		if (e.affectsConfiguration('lilypondStudio.executablePath')) {
-			await initializeVersion(versionManager, diagnosticsProvider);
+			await initializeVersion(versionManager, diagnosticsProvider, completionProvider);
 		}
 	});
 	context.subscriptions.push(configChangeListener);
@@ -147,7 +149,7 @@ async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext,
 	PdfViewerPanel.createOrShow(context.extensionUri, pdfUri, sourceUri);
 }
 
-async function initializeVersion(versionManager: VersionManager, diagnosticsProvider?: any): Promise<void> {
+async function initializeVersion(versionManager: VersionManager, diagnosticsProvider?: any, completionProvider?: any): Promise<void> {
 	const config = vscode.workspace.getConfiguration('lilypondStudio');
 	const lilypondPath = config.get<string>('executablePath') || 'lilypond';
 
@@ -156,6 +158,10 @@ async function initializeVersion(versionManager: VersionManager, diagnosticsProv
 		// Update diagnostics after version is detected
 		if (diagnosticsProvider) {
 			diagnosticsProvider.updateAllDiagnostics();
+		}
+		// Load completions after version is detected
+		if (completionProvider) {
+			await completionProvider.loadCompletions();
 		}
 	} catch (error) {
 		console.error('Failed to detect LilyPond version:', error);
