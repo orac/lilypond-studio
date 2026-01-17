@@ -353,8 +353,11 @@ function restoreState() {
 }
 
 // Save state on scroll
+let scrollListenerEnabled = true;
 container.addEventListener('scroll', () => {
-	saveState();
+	if (scrollListenerEnabled) {
+		saveState();
+	}
 });
 
 // Zoom button event listeners
@@ -448,6 +451,8 @@ window.addEventListener('message', event => {
 			highlightPosition(message.line, message.char);
 			break;
 		case 'reload':
+			// Disable scroll listener to prevent saving incorrect scroll positions during reload
+			scrollListenerEnabled = false;
 			// Save current state before clearing
 			saveState();
 			// Clear the container and reload the PDF
@@ -455,11 +460,23 @@ window.addEventListener('message', event => {
 			loading.style.display = 'block';
 			loading.textContent = 'Loading PDF...';
 			linksByPosition.clear();
-			// Restore state before rendering so zoom mode is preserved
-			restoreState();
+			// Restore zoom state variables before rendering so renderPdf uses correct settings
+			const state = vscode.getState();
+			if (state) {
+				if (state.scale !== undefined) {
+					currentScale = state.scale;
+				}
+				if (state.zoomMode !== undefined) {
+					currentZoomMode = state.zoomMode;
+				}
+			}
+			// Render PDF, then restore scroll position
 			renderPdf().then(() => {
-				// Restore scroll position after render completes
-				restoreState();
+				setTimeout(() => {
+					restoreState();
+					// Re-enable scroll listener after restoration is complete
+					scrollListenerEnabled = true;
+				}, 0);
 			});
 			break;
 	}
@@ -468,6 +485,11 @@ window.addEventListener('message', event => {
 renderPdf().then(() => {
 	// Restore scroll position
 	restoreState();
+
+	// Update button states after a brief delay to ensure custom elements are initialized
+	setTimeout(() => {
+		updateZoomDisplay();
+	}, 0);
 
 	// Notify extension that PDF is ready
 	vscode.postMessage({ type: 'ready' });
