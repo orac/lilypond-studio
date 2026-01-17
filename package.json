@@ -101,6 +101,18 @@
           "message": 5
         }
       }
+    ],
+    "customEditors": [
+      {
+        "viewType": "lilypondStudio.pdfPreview",
+        "displayName": "LilyPond PDF Preview",
+        "selector": [
+          {
+            "filenamePattern": "*.pdf"
+          }
+        ],
+        "priority": "option"
+      }
     ]
   },
   "scripts": {

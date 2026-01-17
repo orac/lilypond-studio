@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
+/** Manages a PDF viewer webview panel */
 export class PdfViewerPanel {
 	public static currentPanel: PdfViewerPanel | undefined;
 	private readonly panel: vscode.WebviewPanel;
@@ -12,6 +13,35 @@ export class PdfViewerPanel {
 	private editorChangeListener: vscode.Disposable | undefined;
 	private hoverDecorationType: vscode.TextEditorDecorationType | undefined;
 	private fileWatcher: vscode.FileSystemWatcher | undefined;
+
+	public static createOrShowWithPanel(
+		extensionUri: vscode.Uri,
+		pdfUri: vscode.Uri,
+		existingPanel: vscode.WebviewPanel,
+		sourceUri?: vscode.Uri
+	) {
+		// Close any existing panel first
+		if (PdfViewerPanel.currentPanel) {
+			PdfViewerPanel.currentPanel.dispose();
+		}
+
+		// Set up the existing panel with our configuration
+		const pdfDir = vscode.Uri.file(path.dirname(pdfUri.fsPath));
+		existingPanel.webview.options = {
+			enableScripts: true,
+			localResourceRoots: [
+				vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
+				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
+				vscode.Uri.joinPath(extensionUri, 'dist'),
+				pdfDir
+			]
+		};
+
+		existingPanel.title = path.basename(pdfUri.fsPath);
+
+		PdfViewerPanel.currentPanel = new PdfViewerPanel(existingPanel, extensionUri, pdfUri, sourceUri);
+	}
 
 	public static createOrShow(extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
 		const column = vscode.ViewColumn.Beside;
@@ -37,6 +67,9 @@ export class PdfViewerPanel {
 				]
 			};
 
+			// Update panel title to show the new PDF filename
+			PdfViewerPanel.currentPanel.panel.title = path.basename(pdfUri.fsPath);
+
 			PdfViewerPanel.currentPanel.panel.reveal(column, true);
 			PdfViewerPanel.currentPanel.update();
 			PdfViewerPanel.currentPanel.setupEditorSync();
@@ -50,7 +83,7 @@ export class PdfViewerPanel {
 		// Otherwise, create a new panel
 		const panel = vscode.window.createWebviewPanel(
 			'lilypondPdfPreview',
-			'PDF Preview',
+			path.basename(pdfUri.fsPath),
 			{ viewColumn: column, preserveFocus: true },
 			{
 				enableScripts: true,
@@ -143,6 +176,11 @@ export class PdfViewerPanel {
 		}
 	}
 
+	/** Click handler for links in the PDF
+	 * 
+	 * In particular, it handles LilyPond "point-and-click" links of the form:
+	 * textedit:///path/to/file.ly:line:char:char
+	 */
 	private async handlePdfClick(uri: string) {
 		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
 		if (!uri.startsWith('textedit://')) {
@@ -182,6 +220,10 @@ export class PdfViewerPanel {
 		}
 	}
 
+	/** Hover handler for links in the PDF
+	 * 
+	 * Adds a box around the link, and sends the link target to the source editor to add a decoration there.
+	 */
 	private async handlePdfHover(uri: string) {
 		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
 		if (!uri.startsWith('textedit://')) {
@@ -235,6 +277,7 @@ export class PdfViewerPanel {
 		}
 	}
 
+	/** Sets a listener for selection changes in the editor to sync the highlighting in the PDF */
 	private setupEditorSync() {
 		// Clean up existing listener
 		if (this.editorChangeListener) {
@@ -250,6 +293,7 @@ export class PdfViewerPanel {
 		});
 	}
 
+	/** Sends a source file selection from the source editor to the webview */
 	private syncCurrentPosition() {
 		const editor = vscode.window.activeTextEditor;
 		if (!editor || !this.sourceUri || editor.document.uri.fsPath !== this.sourceUri.fsPath) {

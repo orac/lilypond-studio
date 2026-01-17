@@ -2,8 +2,12 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PdfViewerPanel } from './pdfViewer';
+import { PdfCustomEditorProvider } from './pdfCustomEditor';
 
 export function activate(context: vscode.ExtensionContext) {
+	// Register custom PDF editor
+	context.subscriptions.push(PdfCustomEditorProvider.register(context));
+
 	const taskProvider = vscode.tasks.registerTaskProvider('lilypond', {
 		provideTasks: () => {
 			const editor = vscode.window.activeTextEditor;
