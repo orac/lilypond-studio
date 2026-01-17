@@ -3,8 +3,36 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { PdfViewerPanel } from './pdfViewer';
 import { PdfCustomEditorProvider } from './pdfCustomEditor';
+import { VersionManager } from './versionManager';
+import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
+import { registerVersionDiagnostics } from './versionDiagnostics';
 
 export function activate(context: vscode.ExtensionContext) {
+	// Initialize version manager and detect LilyPond version
+	const versionManager = VersionManager.getInstance();
+	const diagnosticsProvider = registerVersionDiagnostics(context);
+
+	initializeVersion(versionManager, diagnosticsProvider);
+
+	// Listen for configuration changes
+	const configChangeListener = vscode.workspace.onDidChangeConfiguration(async (e) => {
+		if (e.affectsConfiguration('lilypondStudio.executablePath')) {
+			await initializeVersion(versionManager, diagnosticsProvider);
+		}
+	});
+	context.subscriptions.push(configChangeListener);
+
+	// Register convert-ly command and code action provider
+	registerConvertLyCommand(context);
+	const convertLyProvider = vscode.languages.registerCodeActionsProvider(
+		{ language: 'lilypond', scheme: 'file' },
+		new ConvertLyCodeActionProvider(),
+		{
+			providedCodeActionKinds: ConvertLyCodeActionProvider.providedCodeActionKinds
+		}
+	);
+	context.subscriptions.push(convertLyProvider);
+
 	// Register custom PDF editor
 	context.subscriptions.push(PdfCustomEditorProvider.register(context));
 
@@ -117,6 +145,21 @@ async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: 
 async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext, sourceUri?: vscode.Uri) {
 	const pdfUri = vscode.Uri.file(pdfPath);
 	PdfViewerPanel.createOrShow(context.extensionUri, pdfUri, sourceUri);
+}
+
+async function initializeVersion(versionManager: VersionManager, diagnosticsProvider?: any): Promise<void> {
+	const config = vscode.workspace.getConfiguration('lilypondStudio');
+	const lilypondPath = config.get<string>('executablePath') || 'lilypond';
+
+	try {
+		await versionManager.detectVersion(lilypondPath);
+		// Update diagnostics after version is detected
+		if (diagnosticsProvider) {
+			diagnosticsProvider.updateAllDiagnostics();
+		}
+	} catch (error) {
+		console.error('Failed to detect LilyPond version:', error);
+	}
 }
 
 export function deactivate() { }
