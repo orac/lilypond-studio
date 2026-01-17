@@ -51,7 +51,7 @@ export class PdfViewerPanel {
 		const panel = vscode.window.createWebviewPanel(
 			'lilypondPdfPreview',
 			'PDF Preview',
-			column,
+			{ viewColumn: column, preserveFocus: true },
 			{
 				enableScripts: true,
 				retainContextWhenHidden: true,
@@ -339,6 +339,7 @@ export class PdfViewerPanel {
 			.replace('{{codiconsUri}}', codiconsUri.toString())
 			.replace('{{toolkitUri}}', toolkitUri.toString())
 			.replace('{{viewerScriptUri}}', viewerScriptUri.toString())
+			.replace('{{pdfjsWorkerUri}}', pdfjsWorkerUri.toString())
 			.replace('{{viewerConfig}}', JSON.stringify(config).replace(/"/g, '&quot;'));
 	}
 }
