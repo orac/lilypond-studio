@@ -277,6 +277,47 @@ function highlightPosition(line: number, char: number) {
 	}
 }
 
+function highlightRange(startLine: number, startChar: number, endLine: number, endChar: number) {
+	// Remove existing highlights
+	document.querySelectorAll('.highlight').forEach(el => el.remove());
+
+	// If it's a single position (no actual range selected), use the simpler single-position logic
+	if (startLine === endLine && startChar === endChar) {
+		highlightPosition(startLine, startChar);
+		return;
+	}
+
+	// Find all links whose targets fall within the selected range
+	const matchingLinks = [];
+	for (const [key, links] of linksByPosition.entries()) {
+		const [linkLine, linkChar] = key.split(':').map(Number);
+
+		// Check if this link position is within the selection range
+		const isInRange = (linkLine > startLine || (linkLine === startLine && linkChar >= startChar)) &&
+			(linkLine < endLine || (linkLine === endLine && linkChar <= endChar));
+
+		if (isInRange) {
+			matchingLinks.push(...links);
+		}
+	}
+
+	// Highlight all matching links
+	if (matchingLinks.length > 0) {
+		matchingLinks.forEach(linkInfo => {
+			const link = linkInfo.element;
+			const highlight = document.createElement('div');
+			highlight.className = 'highlight';
+			highlight.style.left = link.style.left;
+			highlight.style.top = link.style.top;
+			highlight.style.width = link.style.width;
+			highlight.style.height = link.style.height;
+
+			link.parentElement?.appendChild(highlight);
+
+		});
+	}
+}
+
 // Zoom functions
 function setZoom(scale: number, mode: ZoomMode) {
 	currentScale = scale;
@@ -428,12 +469,23 @@ window.addEventListener('resize', () => {
 	}
 });
 
+/** The messages sent from the VSC side of the extension in pdfViewer.ts */
+type VsCodeMessage =
+	| { type: 'click'; uri: string }
+	| { type: 'hover'; uri: string }
+	| { type: 'unhover' }
+	| { type: 'sync'; startLine: number; startChar: number; endLine: number; endChar: number }
+	| { type: 'reload' };
+
 // Listen for sync messages from VS Code
-window.addEventListener('message', event => {
+window.addEventListener('message', (event: MessageEvent<VsCodeMessage>) => {
 	const message = event.data;
 	switch (message.type) {
 		case 'sync':
-			highlightPosition(message.line, message.char);
+			if (message.startLine !== undefined && message.startChar !== undefined &&
+				message.endLine !== undefined && message.endChar !== undefined) {
+				highlightRange(message.startLine, message.startChar, message.endLine, message.endChar);
+			}
 			break;
 		case 'reload':
 			// Disable scroll listener to prevent saving incorrect scroll positions during reload

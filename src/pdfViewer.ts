@@ -302,15 +302,19 @@ export class PdfViewerPanel {
 			return;
 		}
 
-		const position = editor.selection.active;
-		const line = position.line + 1; // Convert to 1-based
-		const char = position.character;
+		const selection = editor.selection;
+		const startLine = selection.start.line + 1; // Convert to 1-based
+		const startChar = selection.start.character;
+		const endLine = selection.end.line + 1; // Convert to 1-based
+		const endChar = selection.end.character;
 
-		// Send sync message to webview
+		// Send sync message to webview with full range
 		this.panel.webview.postMessage({
 			type: 'sync',
-			line: line,
-			char: char
+			startLine: startLine,
+			startChar: startChar,
+			endLine: endLine,
+			endChar: endChar
 		});
 	}
 
