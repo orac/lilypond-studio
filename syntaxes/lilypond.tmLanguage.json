@@ -110,7 +110,7 @@
         },
         {
           "name": "meta.chord.lilypond",
-          "begin": "<",
+          "begin": "(?<!\\\\)<",
           "end": ">",
           "patterns": [
             { "include": "#music" }
