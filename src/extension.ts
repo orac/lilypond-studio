@@ -8,18 +8,24 @@ import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convert
 import { registerVersionDiagnostics } from './versionDiagnostics';
 import { registerCompletionProvider } from './completionProvider';
 
-export function activate(context: vscode.ExtensionContext) {
+/** Promise that resolves when extension initialization is complete */
+export let extensionReady: Promise<void>;
+
+/** Re-export VersionManager for testing access to the bundled singleton */
+export { VersionManager };
+
+export function activate(context: vscode.ExtensionContext): { extensionReady: Promise<void>; VersionManager: typeof VersionManager } {
 	// Initialize version manager and detect LilyPond version
 	const versionManager = VersionManager.getInstance();
 	const diagnosticsProvider = registerVersionDiagnostics(context);
 	const completionProvider = registerCompletionProvider(context);
 
-	initializeVersion(versionManager, diagnosticsProvider, completionProvider);
+	extensionReady = initializeVersion(versionManager, diagnosticsProvider, completionProvider);
 
 	// Listen for configuration changes
-	const configChangeListener = vscode.workspace.onDidChangeConfiguration(async (e) => {
+	const configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
 		if (e.affectsConfiguration('lilypondStudio.executablePath')) {
-			await initializeVersion(versionManager, diagnosticsProvider, completionProvider);
+			extensionReady = initializeVersion(versionManager, diagnosticsProvider, completionProvider);
 		}
 	});
 	context.subscriptions.push(configChangeListener);
@@ -82,6 +88,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.executeCommand('setContext', 'lilypondFileOpen', true);
 		checkAndOpenCorrespondingPdf(vscode.window.activeTextEditor, context);
 	}
+
+	// Return exports for testing access
+	return { extensionReady, VersionManager };
 }
 
 function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {

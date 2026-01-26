@@ -25,22 +25,38 @@ export function compareVersions(v1: string, v2: string): number {
 	return 0;
 }
 
+/** Function type for running commands */
+type CommandRunner = (command: string, args: string[]) => Promise<string>;
+
 /**
  * Manages LilyPond version detection and tracking
  */
 export class VersionManager {
 	private static instance: VersionManager;
+	private static mockCommandRunner: CommandRunner | null = null;
 	private lilypondVersion: string | null = null;
 	private pythonPath: string | null = null;
 	private convertLyPath: string | null = null;
+	private commandRunner: CommandRunner;
 
-	private constructor() {}
+	private constructor() {
+		// Use mock if set, otherwise use default
+		this.commandRunner = VersionManager.mockCommandRunner ?? this.defaultCommandRunner.bind(this);
+	}
 
 	public static getInstance(): VersionManager {
 		if (!VersionManager.instance) {
 			VersionManager.instance = new VersionManager();
 		}
 		return VersionManager.instance;
+	}
+
+	/**
+	 * Sets a mock command runner before getInstance is called (for testing)
+	 * Must be called before getInstance() to take effect on new instances
+	 */
+	public static setMockCommandRunner(runner: CommandRunner | null): void {
+		VersionManager.mockCommandRunner = runner;
 	}
 
 	/**
@@ -51,7 +67,7 @@ export class VersionManager {
 	public async detectVersion(lilypondExePath: string): Promise<string | null> {
 		try {
 			// Run lilypond --version
-			const versionOutput = await this.runCommand(lilypondExePath, ['--version']);
+			const versionOutput = await this.commandRunner(lilypondExePath, ['--version']);
 
 			// Parse version from first line: "GNU LilyPond 2.24.1 (running Guile 2.2)"
 			const versionMatch = versionOutput.match(/GNU LilyPond\s+(\d+\.\d+\.\d+)/);
@@ -89,6 +105,27 @@ export class VersionManager {
 	}
 
 	/**
+	 * Sets the version directly (for testing purposes)
+	 */
+	public setVersionForTesting(version: string): void {
+		this.lilypondVersion = version;
+	}
+
+	/**
+	 * Sets a mock command runner (for testing purposes)
+	 */
+	public setCommandRunnerForTesting(runner: CommandRunner): void {
+		this.commandRunner = runner;
+	}
+
+	/**
+	 * Resets the singleton instance (for testing purposes)
+	 */
+	public static resetInstance(): void {
+		VersionManager.instance = undefined as unknown as VersionManager;
+	}
+
+	/**
 	 * Gets the path to python.exe
 	 */
 	public getPythonPath(): string | null {
@@ -103,11 +140,11 @@ export class VersionManager {
 	}
 
 	/**
-	 * Executes a command and returns the output
+	 * Default command runner using child_process
 	 */
-	private runCommand(command: string, args: string[]): Promise<string> {
+	private defaultCommandRunner(command: string, args: string[]): Promise<string> {
 		return new Promise((resolve, reject) => {
-			cp.execFile(command, args, (error, stdout, stderr) => {
+			cp.execFile(command, args, (error, stdout) => {
 				if (error) {
 					reject(error);
 					return;

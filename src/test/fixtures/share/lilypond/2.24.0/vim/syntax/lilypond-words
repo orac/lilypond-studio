@@ -1,0 +1,17 @@
+\\version
+\\relative
+\\absolute
+\\new
+\\context
+\\override
+\\set
+\\unset
+\\clef
+\\key
+\\time
+\\tempo
+\\partial
+\\repeat
+\\alternative
+major
+minor
