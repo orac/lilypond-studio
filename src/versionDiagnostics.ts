@@ -1,16 +1,14 @@
 import * as vscode from 'vscode';
-import { VersionManager, parseFileVersion, compareVersions } from './versionManager';
+import { LilyPondInstallation, parseFileVersion, compareVersions } from './LilyPondInstallation';
 
 /**
- * Provides diagnostics for outdated LilyPond version directives
+ * Provides diagnostics for outdated LilyPond version directives, which can automatically be updated by running convert-ly.
  */
 export class VersionDiagnosticsProvider {
 	private diagnosticCollection: vscode.DiagnosticCollection;
-	private versionManager: VersionManager;
 
 	constructor() {
 		this.diagnosticCollection = vscode.languages.createDiagnosticCollection('lilypond-version');
-		this.versionManager = VersionManager.getInstance();
 	}
 
 	/**
@@ -23,7 +21,7 @@ export class VersionDiagnosticsProvider {
 
 		const diagnostics: vscode.Diagnostic[] = [];
 		const fileVersion = parseFileVersion(document);
-		const lilypondVersion = this.versionManager.getVersion();
+		const lilypondVersion = LilyPondInstallation.getInstance()?.getVersion() ?? null;
 
 		// Only create diagnostic if both versions are available and file version is outdated
 		if (fileVersion && lilypondVersion && compareVersions(fileVersion, lilypondVersion) < 0) {

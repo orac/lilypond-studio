@@ -1,113 +1,78 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import { VersionManager } from './versionManager';
+import { LilyPondInstallation } from './LilyPondInstallation';
 
 /**
  * Provides autocomplete suggestions for LilyPond commands
  */
 export class LilyPondCompletionProvider implements vscode.CompletionItemProvider {
 	private completionItems: vscode.CompletionItem[] = [];
-	private versionManager: VersionManager;
-
-	constructor() {
-		this.versionManager = VersionManager.getInstance();
-	}
 
 	/**
-	 * Loads completions from the lilypond-words file
+	 * Loads completions from the lilypond-words file.
+	 * Called when LilyPondInstallation becomes ready.
 	 */
 	public async loadCompletions(): Promise<void> {
+		const installation = LilyPondInstallation.getInstance();
+		if (!installation) {
+			// Not ready yet - will be called again when ready
+			return;
+		}
+
 		try {
-			const wordsFilePath = this.getWordsFilePath();
-			if (!wordsFilePath) {
-				console.log('Could not determine lilypond-words file path');
-				return;
-			}
+			const words = await installation.readWordsFile();
+			const version = installation.getVersion();
+			this.completionItems = [];
 
-			if (!fs.existsSync(wordsFilePath)) {
-				console.log(`lilypond-words file not found at: ${wordsFilePath}`);
-				return;
-			}
+			for await (const word of words) {
+				// Un-escape doubled backslashes: \\ -> \
+				const unescaped = word.replace(/\\\\/g, '\\');
 
-			const content = fs.readFileSync(wordsFilePath, 'utf-8');
-			const lines = content.split(/\r?\n/);
-
-			const version = this.versionManager.getVersion();
-
-			this.completionItems = lines
-				.map(line => line.trim())
-				.filter(line => line.length > 0)
-				.map(word => {
-					// Un-escape doubled backslashes: \\ -> \
-					const unescaped = word.replace(/\\\\/g, '\\');
-
-					// Special case for \version - insert snippet with detected version
-					if (unescaped === '\\version' && version) {
-						const item = new vscode.CompletionItem(
-							'\\version',
-							vscode.CompletionItemKind.Snippet
-						);
-
-						// Use a snippet to insert \version "x.y.z"
-						item.insertText = new vscode.SnippetString(`\\version "\${1:${version}}"`);
-						item.detail = 'LilyPond version directive';
-						item.documentation = new vscode.MarkdownString(
-							`Insert version directive with current LilyPond version (${version})`
-						);
-
-						return item;
-					}
-
+				// Special case for \version - insert snippet with detected version
+				if (unescaped === '\\version' && version) {
 					const item = new vscode.CompletionItem(
-						unescaped,
-						vscode.CompletionItemKind.Keyword
+						'\\version',
+						vscode.CompletionItemKind.Snippet
 					);
 
-					item.insertText = unescaped;
+					// Use a snippet to insert \version "x.y.z"
+					item.insertText = new vscode.SnippetString(`\\version "\${1:${version}}"`);
+					item.detail = 'LilyPond version directive';
+					item.documentation = new vscode.MarkdownString(
+						`Insert version directive with current LilyPond version (${version})`
+					);
 
-					// Add detail to show this is a LilyPond command
-					if (unescaped.startsWith('\\')) {
-						item.detail = 'LilyPond command';
-					}
+					this.completionItems.push(item);
+					continue;
+				}
 
-					return item;
-				});
+				const item = new vscode.CompletionItem(
+					unescaped,
+					vscode.CompletionItemKind.Keyword
+				);
+
+				item.insertText = unescaped;
+
+				// Add detail to show this is a LilyPond command
+				if (unescaped.startsWith('\\')) {
+					item.detail = 'LilyPond command';
+				}
+
+				this.completionItems.push(item);
+			}
 
 			console.log(`Loaded ${this.completionItems.length} completions from lilypond-words`);
 		} catch (error) {
+			// Don't show error to user - LilyPondInstallation handles that
 			console.error('Error loading LilyPond completions:', error);
 		}
 	}
 
 	/**
-	 * Determines the path to the lilypond-words file
+	 * Clears all completions.
+	 * Called when LilyPondInstallation is invalidated.
 	 */
-	private getWordsFilePath(): string | null {
-		const version = this.versionManager.getVersion();
-		if (!version) {
-			return null;
-		}
-
-		// Get the LilyPond executable path to determine the installation directory
-		const config = vscode.workspace.getConfiguration('lilypondStudio');
-		const lilypondPath = config.get<string>('executablePath') || 'lilypond';
-
-		// LilyPond executable is typically at: <install-dir>/bin/lilypond.exe
-		// Words file is at: <install-dir>/share/lilypond/<version>/vim/syntax/lilypond-words
-		const binDir = path.dirname(lilypondPath);
-		const installDir = path.dirname(binDir);
-		const wordsFilePath = path.join(
-			installDir,
-			'share',
-			'lilypond',
-			version,
-			'vim',
-			'syntax',
-			'lilypond-words'
-		);
-
-		return wordsFilePath;
+	public clearCompletions(): void {
+		this.completionItems = [];
 	}
 
 	/**

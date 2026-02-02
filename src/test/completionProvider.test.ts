@@ -2,12 +2,25 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as path from 'path';
 
+// We need to use the extension's bundled LilyPondInstallation class, not import it directly.
+// The extension bundles its own copy, so direct imports would be a different class instance.
+type LilyPondInstallationType = {
+	getInstance(): any;
+	setMockInstance(mock: any): void;
+	createMockInstance(config: { version: string; executablePath: string }): any;
+	resetForTesting(): void;
+	invalidate(): void;
+};
+
 suite('Completion Provider', () => {
 	// Path to our test fixtures
 	// __dirname is out/test when compiled, so go up to project root
 	const projectRoot = path.join(__dirname, '..', '..');
 	const fixturesPath = path.join(projectRoot, 'src', 'test', 'fixtures');
 	const mockLilypondPath = path.join(fixturesPath, 'bin', 'lilypond.exe');
+
+	// Reference to the extension's LilyPondInstallation class
+	let LilyPondInstallation: LilyPondInstallationType;
 
 	/**
 	 * Helper to create a scratch document with the given content
@@ -22,59 +35,55 @@ suite('Completion Provider', () => {
 	}
 
 	suiteSetup(async () => {
-		// Open a scratch document to ensure the extension is activated
-		const document = await createScratchDocument('\\version "2.24.0"');
-		await vscode.window.showTextDocument(document);
-
-		// Get the extension's exports through VSCode's extension API
-		// This ensures we get the bundled extension, not the test's compiled version
-		// For development extensions without a publisher, the ID is just the name
+		// Get the extension first (need it to access the bundled LilyPondInstallation)
 		const allExtensions = vscode.extensions.all;
 		const ext = allExtensions.find(e => e.id.includes('lilypond-studio'));
 		if (!ext) {
 			const ids = allExtensions.map(e => e.id).join(', ');
 			throw new Error(`Extension not found. Available: ${ids}`);
 		}
-		// Ensure the extension is activated
+
+		// Activate extension to get exports
 		if (!ext.isActive) {
 			await ext.activate();
 		}
-		const extensionExports = ext.exports;
 
-		// Set up the VersionManager with a mock command runner
-		// This must use the VersionManager from the bundled extension
-		const versionManager = extensionExports.VersionManager.getInstance();
-		versionManager.setCommandRunnerForTesting(async (_command: string, args: string[]) => {
-			// Return mock output for lilypond --version
-			if (args.includes('--version')) {
-				return 'GNU LilyPond 2.24.0 (running Guile 2.2)\n';
-			}
-			throw new Error(`Unexpected command: ${args.join(' ')}`);
+		// Get the bundled LilyPondInstallation from extension exports
+		LilyPondInstallation = ext.exports.LilyPondInstallation;
+
+		// Set up mock instance using the extension's class
+		const mockInstallation = LilyPondInstallation.createMockInstance({
+			version: '2.24.0',
+			executablePath: mockLilypondPath
 		});
 
-		// Now configure the extension to use our mock LilyPond path
-		// This triggers the onDidChangeConfiguration listener which will:
-		// 1. Call detectVersion (now using our mock)
-		// 2. Call loadCompletions (loading from our fixture)
-		const config = vscode.workspace.getConfiguration('lilypondStudio');
-		await config.update('executablePath', mockLilypondPath, vscode.ConfigurationTarget.Global);
+		// Fire the ready event to trigger completion loading
+		LilyPondInstallation.setMockInstance(mockInstallation);
 
-		// Wait for the extension to finish initializing
-		await extensionExports.extensionReady;
+		// Now open a scratch document
+		const document = await createScratchDocument('\\version "2.24.0"');
+		await vscode.window.showTextDocument(document);
+
+		// Wait for the async ready event handlers to complete
+		await new Promise(resolve => setTimeout(resolve, 500));
+
+		// Verify the mock is properly set
+		const instance = LilyPondInstallation.getInstance();
+		if (!instance) {
+			throw new Error('Mock instance not set properly');
+		}
+		if (instance.getVersion() !== '2.24.0') {
+			throw new Error(`Expected version 2.24.0, got ${instance.getVersion()}`);
+		}
 	});
 
 	suiteTeardown(async () => {
 		// Close any open editors first
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// Reset configuration
-		const config = vscode.workspace.getConfiguration('lilypondStudio');
-		await config.update('executablePath', undefined, vscode.ConfigurationTarget.Global);
-
-		// Reset VersionManager (get from bundled extension via VSCode API)
-		const ext = vscode.extensions.getExtension('undefined_publisher.lilypond-studio');
-		if (ext?.exports?.VersionManager) {
-			ext.exports.VersionManager.resetInstance();
+		// Reset LilyPondInstallation
+		if (LilyPondInstallation) {
+			LilyPondInstallation.resetForTesting();
 		}
 	});
 
@@ -188,7 +197,7 @@ suite('Completion Provider', () => {
 	});
 
 	test('completion replaces correct range with backslash', async () => {
-		const document = await setDocumentContent('c4 \\rel');
+		const document = await createScratchDocument('c4 \\rel');
 
 		// Trigger completion at the end
 		const position = new vscode.Position(0, 7);

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { VersionManager, parseFileVersion, compareVersions } from './versionManager';
+import { LilyPondInstallation, parseFileVersion, compareVersions } from './LilyPondInstallation';
 
 /**
  * Provides code actions for upgrading LilyPond files using convert-ly
@@ -9,25 +9,25 @@ export class ConvertLyCodeActionProvider implements vscode.CodeActionProvider {
 		vscode.CodeActionKind.QuickFix
 	];
 
-	private versionManager: VersionManager;
-
-	constructor() {
-		this.versionManager = VersionManager.getInstance();
-	}
-
-	public provideCodeActions(
+	public async provideCodeActions(
 		document: vscode.TextDocument,
 		range: vscode.Range | vscode.Selection,
 		context: vscode.CodeActionContext,
 		token: vscode.CancellationToken
-	): vscode.CodeAction[] | undefined {
+	): Promise<vscode.CodeAction[] | undefined> {
 		// Only provide actions for LilyPond files
 		if (document.languageId !== 'lilypond') {
 			return undefined;
 		}
 
+		// Get installation on demand - may be null if not ready
+		const installation = await LilyPondInstallation.ensureInitialized();
+		if (!installation) {
+			return undefined;
+		}
+
 		const fileVersion = parseFileVersion(document);
-		const lilypondVersion = this.versionManager.getVersion();
+		const lilypondVersion = installation.getVersion();
 
 		// Only offer the action if:
 		// 1. We successfully detected the LilyPond version
@@ -78,7 +78,14 @@ export function registerConvertLyCommand(context: vscode.ExtensionContext): void
 	const command = vscode.commands.registerCommand(
 		'lilypondStudio.runConvertLy',
 		async (uri: vscode.Uri) => {
-			const versionManager = VersionManager.getInstance();
+			const installation = await LilyPondInstallation.ensureInitialized();
+
+			if (!installation) {
+				vscode.window.showErrorMessage(
+					'Can\'t run convert-ly without a configured LilyPond path.'
+				);
+				return;
+			}
 
 			// Clear and show the output channel
 			outputChannel.clear();
@@ -93,7 +100,7 @@ export function registerConvertLyCommand(context: vscode.ExtensionContext): void
 						cancellable: false
 					},
 					async (progress) => {
-						await versionManager.runConvertLy(uri.fsPath, outputChannel);
+						await installation.runConvertLy(uri.fsPath, outputChannel);
 					}
 				);
 

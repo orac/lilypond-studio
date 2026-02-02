@@ -3,32 +3,60 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { PdfViewerPanel } from './pdfViewer';
 import { PdfCustomEditorProvider } from './pdfCustomEditor';
-import { VersionManager } from './versionManager';
+import { LilyPondInstallation } from './LilyPondInstallation';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
 import { registerVersionDiagnostics } from './versionDiagnostics';
 import { registerCompletionProvider } from './completionProvider';
 
-/** Promise that resolves when extension initialization is complete */
-export let extensionReady: Promise<void>;
 
-/** Re-export VersionManager for testing access to the bundled singleton */
-export { VersionManager };
-
-export function activate(context: vscode.ExtensionContext): { extensionReady: Promise<void>; VersionManager: typeof VersionManager } {
-	// Initialize version manager and detect LilyPond version
-	const versionManager = VersionManager.getInstance();
+export function activate(context: vscode.ExtensionContext): { LilyPondInstallation: typeof LilyPondInstallation } {
+	// Register providers (they work without LilyPondInstallation, just with limited functionality)
 	const diagnosticsProvider = registerVersionDiagnostics(context);
 	const completionProvider = registerCompletionProvider(context);
 
-	extensionReady = initializeVersion(versionManager, diagnosticsProvider, completionProvider);
+	// Subscribe to LilyPondInstallation events
+	context.subscriptions.push(
+		LilyPondInstallation.onDidBecomeReady(async () => {
+			// Update components when installation becomes ready
+			diagnosticsProvider.updateAllDiagnostics();
+			await completionProvider.loadCompletions();
+		})
+	);
+
+	context.subscriptions.push(
+		LilyPondInstallation.onDidInvalidate(() => {
+			// Clear completions when installation is invalidated
+			completionProvider.clearCompletions();
+		})
+	);
+
+	// Lazy initialization: trigger when first .ly file is opened
+	context.subscriptions.push(
+		vscode.workspace.onDidOpenTextDocument(document => {
+			if (document.languageId === 'lilypond') {
+				LilyPondInstallation.ensureInitialized();
+			}
+		})
+	);
+
+	// Check if a .ly file is already open (e.g., on extension reload)
+	if (vscode.workspace.textDocuments.some(doc => doc.languageId === 'lilypond')) {
+		LilyPondInstallation.ensureInitialized();
+	}
 
 	// Listen for configuration changes
-	const configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
-		if (e.affectsConfiguration('lilypondStudio.executablePath')) {
-			extensionReady = initializeVersion(versionManager, diagnosticsProvider, completionProvider);
-		}
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('lilypondStudio.executablePath')) {
+				LilyPondInstallation.invalidate();
+			}
+		})
+	);
+
+	// Dispose LilyPondInstallation events when extension deactivates
+	context.subscriptions.push({
+		dispose: () => LilyPondInstallation.disposeEvents()
 	});
-	context.subscriptions.push(configChangeListener);
 
 	// Register convert-ly command and code action provider
 	registerConvertLyCommand(context);
@@ -90,12 +118,17 @@ export function activate(context: vscode.ExtensionContext): { extensionReady: Pr
 	}
 
 	// Return exports for testing access
-	return { extensionReady, VersionManager };
+	return { LilyPondInstallation };
 }
 
 function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
+	// Get path from installation if available, otherwise fall back to config
+	const installation = LilyPondInstallation.getInstance();
+	const lilypondPath = installation?.getExecutablePath() ??
+		vscode.workspace.getConfiguration('lilypondStudio').get<string>('executablePath') ??
+		'lilypond';
+
 	const config = vscode.workspace.getConfiguration('lilypondStudio');
-	const lilypondPath = config.get<string>('executablePath') || 'lilypond';
 	const includeDirs = config.get<string[]>('includeDirs') || [];
 
 	const editor = vscode.window.activeTextEditor;
@@ -156,25 +189,6 @@ async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: 
 async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext, sourceUri?: vscode.Uri) {
 	const pdfUri = vscode.Uri.file(pdfPath);
 	PdfViewerPanel.createOrShow(context.extensionUri, pdfUri, sourceUri);
-}
-
-async function initializeVersion(versionManager: VersionManager, diagnosticsProvider?: any, completionProvider?: any): Promise<void> {
-	const config = vscode.workspace.getConfiguration('lilypondStudio');
-	const lilypondPath = config.get<string>('executablePath') || 'lilypond';
-
-	try {
-		await versionManager.detectVersion(lilypondPath);
-		// Update diagnostics after version is detected
-		if (diagnosticsProvider) {
-			diagnosticsProvider.updateAllDiagnostics();
-		}
-		// Load completions after version is detected
-		if (completionProvider) {
-			await completionProvider.loadCompletions();
-		}
-	} catch (error) {
-		console.error('Failed to detect LilyPond version:', error);
-	}
 }
 
 export function deactivate() { }
