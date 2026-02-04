@@ -23,11 +23,14 @@ enum ZoomMode {
 	Custom = 'custom',
 	FitWidth = 'fit-width',
 	FitPage = 'fit-page',
-	Actual = 'actual'
 }
 
+// PDF uses 72 points per inch, CSS uses 96 pixels per inch
+// This scale factor converts PDF points to CSS pixels for actual size display
+const ACTUAL_SIZE_SCALE = 96 / 72; // ≈ 1.333
+
 let currentZoomMode: ZoomMode = ZoomMode.FitPage;
-let currentScale = 1.5; // Default scale (will be calculated based on zoom mode)
+let currentScale = ACTUAL_SIZE_SCALE; // Default scale (will be calculated based on zoom mode)
 let pdfDocument: any = null;
 
 interface TexteditLink {
@@ -44,8 +47,9 @@ const linksByPosition = new Map<string, TexteditLink[]>();
 let pdfjsLib;
 
 function updateZoomDisplay() {
-	// Always show percentage
-	zoomLevelDisplay.textContent = Math.round(currentScale * 100) + '%';
+	// Show percentage relative to actual size (not raw PDF scale)
+	const percentOfActual = Math.round((currentScale / ACTUAL_SIZE_SCALE) * 100);
+	zoomLevelDisplay.textContent = percentOfActual + '%';
 
 	// Grey out the percentage when in fit modes
 	const isInFitMode = currentZoomMode === ZoomMode.FitWidth || currentZoomMode === ZoomMode.FitPage;
@@ -54,11 +58,9 @@ function updateZoomDisplay() {
 	// Update active state on buttons (using appearance attribute for vscode-button)
 	const fitWidthBtn = document.getElementById('zoom-fit-width')!;
 	const fitPageBtn = document.getElementById('zoom-fit-page')!;
-	const zoom100Btn = document.getElementById('zoom-100')!;
 
 	fitWidthBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitWidth ? 'primary' : 'secondary');
 	fitPageBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitPage ? 'primary' : 'secondary');
-	zoom100Btn.setAttribute('appearance', (currentZoomMode === ZoomMode.Actual && currentScale === 1.0) ? 'primary' : 'secondary');
 }
 
 function calculateFitWidthScale(pageWidth: number): number {
@@ -104,12 +106,17 @@ async function renderPdf() {
 
 		updateZoomDisplay();
 
+		// Get device pixel ratio for high-DPI rendering
+		const dpr = window.devicePixelRatio || 1;
+
 		// Render each page
 		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
 			const page = await pdf.getPage(pageNum);
 
 			// Calculate scale for comfortable viewing
 			const viewport = page.getViewport({ scale: scale });
+			// Create a scaled viewport for high-DPI rendering
+			const scaledViewport = page.getViewport({ scale: scale * dpr });
 
 			// Create page container
 			const pageDiv = document.createElement('div');
@@ -118,13 +125,17 @@ async function renderPdf() {
 			// Create canvas for rendering
 			const canvas = document.createElement('canvas');
 			const context = canvas.getContext('2d');
-			canvas.height = viewport.height;
-			canvas.width = viewport.width;
+			// Set canvas bitmap size to scaled dimensions for sharp rendering
+			canvas.width = scaledViewport.width;
+			canvas.height = scaledViewport.height;
+			// Set CSS size to logical dimensions
+			canvas.style.width = viewport.width + 'px';
+			canvas.style.height = viewport.height + 'px';
 
-			// Render PDF page
+			// Render PDF page at scaled resolution
 			await page.render({
 				canvasContext: context,
-				viewport: viewport
+				viewport: scaledViewport
 			}).promise;
 
 			pageDiv.appendChild(canvas);
@@ -352,14 +363,17 @@ function setZoomFitPage() {
 }
 
 function setZoom100() {
-	setZoom(1.0, ZoomMode.Actual);
+	setZoom(ACTUAL_SIZE_SCALE, ZoomMode.Custom);
 }
 
 function reRenderPdf() {
+	// Save state first to preserve the new zoom settings
+	saveState();
 	// Clear container and re-render with new scale
 	container.innerHTML = '';
 	linksByPosition.clear();
 	renderPdf().then(() => {
+		// Restore only scroll position (zoom settings were already saved above)
 		restoreState();
 	});
 }
