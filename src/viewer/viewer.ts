@@ -32,6 +32,26 @@ const ACTUAL_SIZE_SCALE = 96 / 72; // ≈ 1.333
 let currentZoomMode: ZoomMode = ZoomMode.FitPage;
 let currentScale = ACTUAL_SIZE_SCALE; // Default scale (will be calculated based on zoom mode)
 let pdfDocument: any = null;
+let currentRenderId = 0; // Used to cancel stale renders
+
+/** Zoom anchor point - persists during rapid zoom operations */
+interface ZoomAnchor {
+	clientX: number;      // Cursor position in client coordinates
+	clientY: number;
+	pageIndex: number;    // Which page the cursor was over
+	pageOffsetX: number;  // Cursor position relative to page element
+	pageOffsetY: number;
+	baseScale: number;    // Scale when anchor was captured
+}
+let zoomAnchor: ZoomAnchor | null = null;
+
+/** Custom error for render cancellation */
+class RenderCancelledError extends Error {
+	constructor() {
+		super('Render cancelled');
+		this.name = 'RenderCancelledError';
+	}
+}
 
 interface TexteditLink {
 	element: HTMLAnchorElement;
@@ -41,8 +61,22 @@ interface TexteditLink {
 	charEnd: number;
 }
 
+/** Stored annotation (link) data (zoom-independent) */
+interface StoredAnnotation {
+	rect: number[];
+	url: string;
+}
+
+interface StoredPage {
+	page: any; // PDF.js page object
+	annotations: StoredAnnotation[];
+}
+
 // Store all links with their positions for forward sync
 const linksByPosition = new Map<string, TexteditLink[]>();
+
+// Store loaded pages and annotations (populated by loadPdf, used by renderPages)
+let storedPages: StoredPage[] = [];
 
 let pdfjsLib;
 
@@ -76,7 +110,11 @@ function calculateFitPageScale(pageWidth: number, pageHeight: number): number {
 	return Math.min(widthScale, heightScale);
 }
 
-async function renderPdf() {
+/**
+ * Loads the PDF document and extracts annotations.
+ * Called on initial load and when the PDF file changes.
+ */
+async function loadPdf() {
 	try {
 		pdfjsLib = await import(config.pdfjsUri);
 
@@ -85,141 +123,39 @@ async function renderPdf() {
 
 		const loadingTask = pdfjsLib.getDocument(config.pdfUrl);
 		const pdf = await loadingTask.promise;
+
 		pdfDocument = pdf;
+		storedPages = [];
+
+		// Load all pages and their annotations
+		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+			const page = await pdf.getPage(pageNum);
+			const annotations = await page.getAnnotations();
+
+			// Extract only the link annotations we care about
+			const storedAnnotations: StoredAnnotation[] = [];
+			for (const annotation of annotations) {
+				const linkUrl = annotation.url || annotation.unsafeUrl;
+				if (annotation.subtype === 'Link' && linkUrl) {
+					storedAnnotations.push({
+						rect: annotation.rect,
+						url: linkUrl
+					});
+				}
+			}
+
+			storedPages.push({ page, annotations: storedAnnotations });
+		}
 
 		loading.style.display = 'none';
 		zoomControls.style.display = 'flex';
 
-		// Get first page to calculate scales
-		const firstPage = await pdf.getPage(1);
-		const baseViewport = firstPage.getViewport({ scale: 1.0 });
-
-		// Calculate initial scale based on zoom mode
-		let scale = currentScale;
-		if (currentZoomMode === ZoomMode.FitWidth) {
-			scale = calculateFitWidthScale(baseViewport.width);
-			currentScale = scale;
-		} else if (currentZoomMode === ZoomMode.FitPage) {
-			scale = calculateFitPageScale(baseViewport.width, baseViewport.height);
-			currentScale = scale;
-		}
-
-		updateZoomDisplay();
-
-		// Get device pixel ratio for high-DPI rendering
-		const dpr = window.devicePixelRatio || 1;
-
-		// Render each page
-		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-			const page = await pdf.getPage(pageNum);
-
-			// Calculate scale for comfortable viewing
-			const viewport = page.getViewport({ scale: scale });
-			// Create a scaled viewport for high-DPI rendering
-			const scaledViewport = page.getViewport({ scale: scale * dpr });
-
-			// Create page container
-			const pageDiv = document.createElement('div');
-			pageDiv.className = 'pdf-page';
-
-			// Create canvas for rendering
-			const canvas = document.createElement('canvas');
-			const context = canvas.getContext('2d');
-			// Set canvas bitmap size to scaled dimensions for sharp rendering
-			canvas.width = scaledViewport.width;
-			canvas.height = scaledViewport.height;
-			// Set CSS size to logical dimensions
-			canvas.style.width = viewport.width + 'px';
-			canvas.style.height = viewport.height + 'px';
-
-			// Render PDF page at scaled resolution
-			await page.render({
-				canvasContext: context,
-				viewport: scaledViewport
-			}).promise;
-
-			pageDiv.appendChild(canvas);
-
-			// Extract and render links
-			const annotations = await page.getAnnotations();
-			const linkLayer = document.createElement('div');
-			linkLayer.className = 'page-links';
-			linkLayer.style.width = viewport.width + 'px';
-			linkLayer.style.height = viewport.height + 'px';
-
-			for (const annotation of annotations) {
-				// Check both url and unsafeUrl (PDF.js puts textedit:// in unsafeUrl for security)
-				const linkUrl = annotation.url || annotation.unsafeUrl;
-
-				if (annotation.subtype === 'Link' && linkUrl) {
-					const rect = annotation.rect;
-					const transform = viewport.transform;
-
-					// Convert PDF coordinates to viewport coordinates. Add a little extra height because the bboxes are quite tight.
-					const x = transform[0] * rect[0] + transform[4];
-					const y = transform[3] * rect[3] + transform[5] - 1;
-					const width = (rect[2] - rect[0]) * transform[0];
-					const height = (rect[1] - rect[3]) * transform[3] + 1;
-
-					const link = document.createElement('a');
-					link.style.left = x + 'px';
-					link.style.top = y + 'px';
-					link.style.width = width + 'px';
-					link.style.height = height + 'px';
-					link.href = '#';
-					link.title = linkUrl;
-					link.dataset.url = linkUrl;
-					link.dataset.pageNum = pageNum.toString();
-
-					link.addEventListener('click', (e) => {
-						e.preventDefault();
-						vscode.postMessage({
-							type: 'click',
-							uri: linkUrl
-						});
-					});
-
-					link.addEventListener('pointerenter', () => {
-						vscode.postMessage({
-							type: 'hover',
-							uri: linkUrl
-						});
-					});
-
-					link.addEventListener('pointerleave', () => {
-						vscode.postMessage({
-							type: 'unhover'
-						});
-					});
-
-					linkLayer.appendChild(link);
-
-					// Parse and store link position for forward sync
-					if (linkUrl.startsWith('textedit://')) {
-						try {
-							const parsed = parseTexteditUri(linkUrl);
-							if (parsed) {
-								const key = parsed.line + ':' + parsed.charStart;
-								if (!linksByPosition.has(key)) {
-									linksByPosition.set(key, []);
-								}
-								linksByPosition.get(key)!.push({
-									element: link,
-									pageNum: pageNum,
-									...parsed
-								});
-							}
-						} catch (e) {
-							// Ignore parsing errors
-						}
-					}
-				}
-			}
-
-			pageDiv.appendChild(linkLayer);
-			container.appendChild(pageDiv);
-		}
+		// Now render the pages
+		await renderPages();
 	} catch (error: any) {
+		if (error instanceof RenderCancelledError) {
+			return; // Silently ignore cancellation
+		}
 		console.error('Error loading PDF:', error);
 		loading.textContent = 'Error loading PDF: ' + error.message;
 		loading.innerHTML += '<br><br>Check the DevTools Console (Help > Toggle Developer Tools) for details.';
@@ -227,6 +163,153 @@ async function renderPdf() {
 			type: 'error',
 			message: error.message + ' - ' + error.stack
 		});
+	}
+}
+
+/**
+ * Renders all pages at the current scale.
+ * Called after loadPdf and on zoom/resize changes.
+ */
+async function renderPages() {
+	if (storedPages.length === 0) {
+		return;
+	}
+
+	// Increment render ID to cancel any in-progress renders
+	const renderId = ++currentRenderId;
+
+	// Clear container and link map
+	container.innerHTML = '';
+	linksByPosition.clear();
+
+	// Get base viewport from first page to calculate scales
+	const baseViewport = storedPages[0].page.getViewport({ scale: 1.0 });
+
+	// Calculate scale based on zoom mode
+	let scale = currentScale;
+	if (currentZoomMode === ZoomMode.FitWidth) {
+		scale = calculateFitWidthScale(baseViewport.width);
+		currentScale = scale;
+	} else if (currentZoomMode === ZoomMode.FitPage) {
+		scale = calculateFitPageScale(baseViewport.width, baseViewport.height);
+		currentScale = scale;
+	}
+
+	updateZoomDisplay();
+
+	// Get device pixel ratio for high-DPI rendering
+	const dpr = window.devicePixelRatio || 1;
+
+	// Render each page
+	for (let pageNum = 0; pageNum < storedPages.length; pageNum++) {
+		if (renderId !== currentRenderId) {
+			throw new RenderCancelledError();
+		}
+
+		const { page, annotations } = storedPages[pageNum];
+
+		// Calculate scale for comfortable viewing
+		const viewport = page.getViewport({ scale: scale });
+		// Create a scaled viewport for high-DPI rendering
+		const scaledViewport = page.getViewport({ scale: scale * dpr });
+
+		// Create page container
+		const pageDiv = document.createElement('div');
+		pageDiv.className = 'pdf-page';
+
+		// Create canvas for rendering
+		const canvas = document.createElement('canvas');
+		const context = canvas.getContext('2d');
+		// Set canvas bitmap size to scaled dimensions for sharp rendering
+		canvas.width = scaledViewport.width;
+		canvas.height = scaledViewport.height;
+		// Set CSS size to logical dimensions
+		canvas.style.width = viewport.width + 'px';
+		canvas.style.height = viewport.height + 'px';
+
+		// Render PDF page at scaled resolution
+		await page.render({
+			canvasContext: context,
+			viewport: scaledViewport
+		}).promise;
+		if (renderId !== currentRenderId) {
+			throw new RenderCancelledError();
+		}
+
+		pageDiv.appendChild(canvas);
+
+		// Create link layer from stored annotations
+		const linkLayer = document.createElement('div');
+		linkLayer.className = 'page-links';
+		linkLayer.style.width = viewport.width + 'px';
+		linkLayer.style.height = viewport.height + 'px';
+
+		for (const annotation of annotations) {
+			const { rect, url: linkUrl } = annotation;
+			const transform = viewport.transform;
+
+			// Convert PDF coordinates to viewport coordinates. Add a little extra height because the bboxes are quite tight.
+			const x = transform[0] * rect[0] + transform[4];
+			const y = transform[3] * rect[3] + transform[5] - 1;
+			const width = (rect[2] - rect[0]) * transform[0];
+			const height = (rect[1] - rect[3]) * transform[3] + 1;
+
+			const link = document.createElement('a');
+			link.style.left = x + 'px';
+			link.style.top = y + 'px';
+			link.style.width = width + 'px';
+			link.style.height = height + 'px';
+			link.href = '#';
+			link.title = linkUrl;
+			link.dataset.url = linkUrl;
+			link.dataset.pageNum = (pageNum + 1).toString();
+
+			link.addEventListener('click', (e) => {
+				e.preventDefault();
+				vscode.postMessage({
+					type: 'click',
+					uri: linkUrl
+				});
+			});
+
+			link.addEventListener('pointerenter', () => {
+				vscode.postMessage({
+					type: 'hover',
+					uri: linkUrl
+				});
+			});
+
+			link.addEventListener('pointerleave', () => {
+				vscode.postMessage({
+					type: 'unhover'
+				});
+			});
+
+			linkLayer.appendChild(link);
+
+			// Parse and store link position for forward sync
+			if (linkUrl.startsWith('textedit://')) {
+				try {
+					const parsed = parseTexteditUri(linkUrl);
+					if (parsed) {
+						const key = parsed.line + ':' + parsed.charStart;
+						if (!linksByPosition.has(key)) {
+							linksByPosition.set(key, []);
+						}
+						linksByPosition.get(key)!.push({
+							element: link,
+							pageNum: pageNum + 1,
+							...parsed
+						});
+					}
+				} catch (e) {
+					// Ignore parsing errors
+				}
+			}
+		}
+
+		pageDiv.appendChild(linkLayer);
+		container.appendChild(pageDiv);
 	}
 }
 
@@ -333,16 +416,17 @@ function highlightRange(startLine: number, startChar: number, endLine: number, e
 function setZoom(scale: number, mode: ZoomMode) {
 	currentScale = scale;
 	currentZoomMode = mode;
+	zoomAnchor = null; // Clear any wheel zoom anchor
 	reRenderPdf();
 }
 
 function zoomIn() {
-	const newScale = Math.min(currentScale * 1.2, 5.0);
+	const newScale = Math.min(currentScale * 1.2, 5.0 * ACTUAL_SIZE_SCALE);
 	setZoom(newScale, ZoomMode.Custom);
 }
 
 function zoomOut() {
-	const newScale = Math.max(currentScale / 1.2, 0.1);
+	const newScale = Math.max(currentScale / 1.2, 0.1 * ACTUAL_SIZE_SCALE);
 	setZoom(newScale, ZoomMode.Custom);
 }
 
@@ -366,15 +450,18 @@ function setZoom100() {
 	setZoom(ACTUAL_SIZE_SCALE, ZoomMode.Custom);
 }
 
+/** Redraws the loaded PDF into the canvas to reflect updated zoom settings */
 function reRenderPdf() {
 	// Save state first to preserve the new zoom settings
 	saveState();
-	// Clear container and re-render with new scale
-	container.innerHTML = '';
-	linksByPosition.clear();
-	renderPdf().then(() => {
+	// Re-render with new scale (no need to reload PDF)
+	renderPages().then(() => {
 		// Restore only scroll position (zoom settings were already saved above)
 		restoreState();
+	}).catch((error) => {
+		if (!(error instanceof RenderCancelledError)) {
+			throw error;
+		}
 	});
 }
 
@@ -436,15 +523,91 @@ document.addEventListener('keydown', (e) => {
 	}
 });
 
-// Mouse wheel zoom with Ctrl/Cmd
+// Mouse wheel zoom with Ctrl/Cmd - zooms centered on pointer position
 container.addEventListener('wheel', (e) => {
 	if (e.ctrlKey || e.metaKey) {
 		e.preventDefault();
-		if (e.deltaY < 0) {
-			zoomIn();
-		} else if (e.deltaY > 0) {
-			zoomOut();
+
+		const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+		const newScale = Math.min(Math.max(currentScale * factor, 0.1 * ACTUAL_SIZE_SCALE), 5.0 * ACTUAL_SIZE_SCALE);
+
+		if (newScale === currentScale) {
+			return;
 		}
+
+		// If no anchor exists (first zoom in sequence), capture it now
+		// If anchor exists (rapid zoom), keep the original anchor point
+		if (!zoomAnchor) {
+			// Find which page the cursor is over and calculate offset within that page
+			const pageElements = container.querySelectorAll('.pdf-page');
+			let pageIndex = 0;
+			let pageOffsetX = 0;
+			let pageOffsetY = 0;
+
+			for (let i = 0; i < pageElements.length; i++) {
+				const pageRect = pageElements[i].getBoundingClientRect();
+				if (e.clientY <= pageRect.bottom) {
+					pageIndex = i;
+					pageOffsetX = e.clientX - pageRect.left;
+					pageOffsetY = e.clientY - pageRect.top;
+					break;
+				}
+				// If past last page, use the last page
+				if (i === pageElements.length - 1) {
+					pageIndex = i;
+					pageOffsetX = e.clientX - pageRect.left;
+					pageOffsetY = e.clientY - pageRect.top;
+				}
+			}
+
+			zoomAnchor = {
+				clientX: e.clientX,
+				clientY: e.clientY,
+				pageIndex,
+				pageOffsetX,
+				pageOffsetY,
+				baseScale: currentScale
+			};
+		}
+
+		currentScale = newScale;
+		currentZoomMode = ZoomMode.Custom;
+		saveState();
+
+		renderPages().then(() => {
+			if (zoomAnchor) {
+				// Calculate scale factor from original anchor to current scale
+				const scaleFactor = currentScale / zoomAnchor.baseScale;
+
+				// Find the same page after re-render
+				const pageElements = container.querySelectorAll('.pdf-page');
+				const page = pageElements[zoomAnchor.pageIndex];
+				if (page) {
+					const pageRect = page.getBoundingClientRect();
+
+					// Where is the anchor point now (scaled position within page)
+					const newPageOffsetX = zoomAnchor.pageOffsetX * scaleFactor;
+					const newPageOffsetY = zoomAnchor.pageOffsetY * scaleFactor;
+
+					// Current screen position of that point
+					const currentScreenX = pageRect.left + newPageOffsetX;
+					const currentScreenY = pageRect.top + newPageOffsetY;
+
+					// Adjust scroll to put that point back under the cursor
+					container.scrollLeft += currentScreenX - zoomAnchor.clientX;
+					container.scrollTop += currentScreenY - zoomAnchor.clientY;
+					saveState();
+				}
+
+				// Clear anchor after successful render
+				zoomAnchor = null;
+			}
+		}).catch((error) => {
+			if (!(error instanceof RenderCancelledError)) {
+				throw error;
+			}
+			// Don't clear anchor on cancellation - next render will use it
+		});
 	}
 }, { passive: false });
 
@@ -511,7 +674,8 @@ window.addEventListener('message', (event: MessageEvent<VsCodeMessage>) => {
 			loading.style.display = 'block';
 			loading.textContent = 'Loading PDF...';
 			linksByPosition.clear();
-			// Restore zoom state variables before rendering so renderPdf uses correct settings
+			storedPages = [];
+			// Restore zoom state variables before rendering so loadPdf uses correct settings
 			const state = vscode.getState();
 			if (state) {
 				if (state.scale !== undefined) {
@@ -521,19 +685,25 @@ window.addEventListener('message', (event: MessageEvent<VsCodeMessage>) => {
 					currentZoomMode = state.zoomMode;
 				}
 			}
-			// Render PDF, then restore scroll position
-			renderPdf().then(() => {
+			// Load PDF, then restore scroll position
+			loadPdf().then(() => {
 				setTimeout(() => {
 					restoreState();
 					// Re-enable scroll listener after restoration is complete
 					scrollListenerEnabled = true;
 				}, 0);
+			}).catch((error) => {
+				if (!(error instanceof RenderCancelledError)) {
+					throw error;
+				}
+				// Re-enable scroll listener even if cancelled
+				scrollListenerEnabled = true;
 			});
 			break;
 	}
 });
 
-renderPdf().then(() => {
+loadPdf().then(() => {
 	// Restore scroll position
 	restoreState();
 
@@ -544,4 +714,8 @@ renderPdf().then(() => {
 
 	// Notify extension that PDF is ready
 	vscode.postMessage({ type: 'ready' });
+}).catch((error) => {
+	if (!(error instanceof RenderCancelledError)) {
+		throw error;
+	}
 });
