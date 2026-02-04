@@ -93,11 +93,7 @@
       "patterns": [
         {
           "name": "constant.language.note.lilypond",
-          "match": "\\b[a-gr]([ie]?s{1,2}|[ie]?ss)?[',]*\\d*\\.*(\\*\\d+(/\\d+)?)?(!|\\?|\\+|-|_|\\^)?\\b"
-        },
-        {
-          "name": "constant.language.rest.lilypond",
-          "match": "\\b(r|R|s)\\d*\\.*(\\*\\d+(/\\d+)?)?\\b"
+          "match": "\\b([a-grR]([ie]?s{1,2}|f)?('*|,*))?((1|2|4|8|16|32|64|128|256|512|1024|\\\\breve|\\\\longa)\\.?(\\*\\d+(/\\d+)?)?)?(:(1|2|4|8|16|32|64))?[-_^]?(?!\\w)\\s*"
         },
         {
           "name": "meta.parallel.lilypond",
