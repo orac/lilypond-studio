@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Lilypad (brighter green for dark theme) -->
+  <ellipse cx="8" cy="9" rx="7" ry="5" fill="#4CAF50"/>
+  <!-- Notch in lilypad -->
+  <path d="M8 9 L8 14 L6 11 Z" fill="#1e1e1e"/>
+  <!-- Stem line on pad -->
+  <path d="M8 4 Q8 7 8 9" stroke="#2E7D32" stroke-width="0.5" fill="none"/>
+  <!-- Abstract flower petals (white) -->
+  <ellipse cx="8" cy="4" rx="1.5" ry="2.5" fill="#ffffff"/>
+  <ellipse cx="6" cy="5" rx="1.5" ry="2" fill="#ffffff" transform="rotate(-30 6 5)"/>
+  <ellipse cx="10" cy="5" rx="1.5" ry="2" fill="#ffffff" transform="rotate(30 10 5)"/>
+  <!-- Flower center -->
+  <circle cx="8" cy="5" r="1" fill="#FFEB3B"/>
+</svg>
