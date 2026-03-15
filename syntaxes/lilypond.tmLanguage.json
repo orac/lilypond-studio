@@ -7,6 +7,7 @@
     { "include": "#strings" },
     { "include": "#lyrics" },
     { "include": "#markup" },
+    { "include": "#fraction" },
     { "include": "#music" },
     { "include": "#scheme" },
     { "include": "#commands" },
@@ -32,6 +33,30 @@
         {
           "name": "constant.numeric.duration.lilypond",
           "match": "(1|2|4|8|16|32|64|128|256|512|1024|\\\\breve|\\\\longa)\\.?(\\*\\d+)?\\b"
+        }
+      ]
+    },
+    "fraction": {
+      "name": "constant.numeric.fraction.lilypond",
+      "match": "\\d+/\\d+"
+    },
+    "duration-multiplier": {
+      "patterns": [
+        {
+          "comment": "Duration scaling with fraction, e.g. *3/2",
+          "match": "(\\*)(\\d+/\\d+)",
+          "captures": {
+            "1": { "name": "keyword.operator.lilypond" },
+            "2": { "name": "constant.numeric.fraction.lilypond" }
+          }
+        },
+        {
+          "comment": "Duration scaling with integer, e.g. *2",
+          "match": "(\\*)(\\d+)",
+          "captures": {
+            "1": { "name": "keyword.operator.lilypond" },
+            "2": { "name": "constant.numeric.duration.lilypond" }
+          }
         }
       ]
     },
@@ -117,13 +142,14 @@
     "note-with-pitch": {
       "comment": "Note starting with a pitch: a-g for notes, r for rest, R for multi-measure rest, s for space",
       "name": "meta.note.lilypond",
-      "begin": "\\b([a-grRs](?:(?:[ie]?s{1,2})+|f)?(?:'+|,+)?)((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*(?:\\*\\d+(?:/\\d+)?)?)?(?![a-zA-Z0-9])",
+      "begin": "\\b([a-grRs](?:(?:[ie]?s{1,2})+|f)?(?:'+|,+)?)((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*)?(?![a-zA-Z0-9])",
       "beginCaptures": {
         "1": { "name": "constant.language.pitch.lilypond" },
         "2": { "name": "constant.numeric.duration.lilypond" }
       },
       "end": "(?=[\\s}\\]>)~|]|$)",
       "patterns": [
+        { "include": "#duration-multiplier" },
         { "include": "#note-divider" },
         { "include": "#note-marks" }
       ]
@@ -131,12 +157,13 @@
     "note-duration-only": {
       "comment": "Duration without preceding pitch (repeats previous pitch)",
       "name": "meta.note.lilypond",
-      "begin": "(?<=^|[^a-zA-Z0-9\\\\])((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*(?:\\*\\d+(?:/\\d+)?)?)",
+      "begin": "(?<=^|[^a-zA-Z0-9\\\\])((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*)(?![a-zA-Z0-9])",
       "beginCaptures": {
         "1": { "name": "constant.numeric.duration.lilypond" }
       },
       "end": "(?=[\\s}\\]>)~|]|$)",
       "patterns": [
+        { "include": "#duration-multiplier" },
         { "include": "#note-divider" },
         { "include": "#note-marks" }
       ]

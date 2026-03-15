@@ -46,10 +46,7 @@
 >% Scheme expressions
 #^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
 >#(define foo 42)
-#^^^^^^^^^^^^^ source.lilypond
-#             ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
-#              ^ source.lilypond meta.note.lilypond
-#               ^^ source.lilypond
+#^^^^^^^^^^^^^^^^^ source.lilypond
 >\override Staff.TimeSignature.stencil = #point-stencil
 #^^^^^^^^^ source.lilypond support.function.lilypond
 #         ^^^^^^^^^^^^^^^^^^^^^ source.lilypond

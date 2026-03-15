@@ -35,8 +35,7 @@
 #^^ source.lilypond
 #  ^^^^^ source.lilypond support.function.lilypond
 #       ^ source.lilypond
-#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
-#         ^^ source.lilypond meta.note.lilypond
+#        ^^^ source.lilypond constant.numeric.fraction.lilypond
 >  \key g \major
 #^^ source.lilypond
 #  ^^^^ source.lilypond support.function.lilypond

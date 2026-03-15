@@ -83,8 +83,12 @@
 #^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
 >c4*2 d8*3/2
 #^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
-# ^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond meta.note.lilypond keyword.operator.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
 #    ^ source.lilypond
 #     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
-#      ^^^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^ source.lilypond meta.note.lilypond keyword.operator.lilypond
+#        ^^^ source.lilypond meta.note.lilypond constant.numeric.fraction.lilypond
 >
