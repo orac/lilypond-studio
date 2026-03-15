@@ -1,0 +1,157 @@
+>\version "2.24.0"
+#^^^^^^^^ source.lilypond support.function.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond string.quoted.double.lilypond
+#          ^^^^^^ source.lilypond string.quoted.double.lilypond
+#                ^ source.lilypond string.quoted.double.lilypond
+>
+>\header {
+#^^^^^^^ source.lilypond support.function.lilypond
+#       ^ source.lilypond
+#        ^ source.lilypond punctuation.section.braces.lilypond
+>  title = "Test Score"
+#^^ source.lilypond
+#  ^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#          ^ source.lilypond string.quoted.double.lilypond
+#           ^^^^^^^^^^ source.lilypond string.quoted.double.lilypond
+#                     ^ source.lilypond string.quoted.double.lilypond
+>  composer = "Test"
+#^^ source.lilypond
+#  ^^^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#             ^ source.lilypond string.quoted.double.lilypond
+#              ^^^^ source.lilypond string.quoted.double.lilypond
+#                  ^ source.lilypond string.quoted.double.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>melody = \relative c'' {
+#^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#         ^^^^^^^^^ source.lilypond support.function.lilypond
+#                  ^ source.lilypond
+#                   ^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                      ^ source.lilypond
+#                       ^ source.lilypond punctuation.section.braces.lilypond
+>  \time 4/4
+#^^ source.lilypond
+#  ^^^^^ source.lilypond support.function.lilypond
+#       ^ source.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^^ source.lilypond meta.note.lilypond
+>  \key g \major
+#^^ source.lilypond
+#  ^^^^ source.lilypond support.function.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^^^^^^ source.lilypond support.function.lilypond
+>  \clef treble
+#^^ source.lilypond
+#  ^^^^^ source.lilypond support.function.lilypond
+#       ^^^^^^^^ source.lilypond
+>
+>  g4 a b c |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond keyword.operator.lilypond
+>  d2 d |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond keyword.operator.lilypond
+>  e4 e e e |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond keyword.operator.lilypond
+>  d1 |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond keyword.operator.lilypond
+>
+>  c4 c c c |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond keyword.operator.lilypond
+>  b2 b |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond keyword.operator.lilypond
+>  a4 a a a |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond keyword.operator.lilypond
+>  g1 |
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond keyword.operator.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>\score {
+#^^^^^^ source.lilypond support.function.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond punctuation.section.braces.lilypond
+>  \new Staff \melody
+#^^ source.lilypond
+#  ^^^^ source.lilypond support.function.lilypond
+#      ^^^^^^^ source.lilypond
+#             ^^^^^^^ source.lilypond support.function.lilypond
+>  \layout { }
+#^^ source.lilypond
+#  ^^^^^^^ source.lilypond support.function.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond punctuation.section.braces.lilypond
+#           ^ source.lilypond
+#            ^ source.lilypond punctuation.section.braces.lilypond
+>  \midi { }
+#^^ source.lilypond
+#  ^^^^^ source.lilypond support.function.lilypond
+#       ^ source.lilypond
+#        ^ source.lilypond punctuation.section.braces.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond punctuation.section.braces.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>

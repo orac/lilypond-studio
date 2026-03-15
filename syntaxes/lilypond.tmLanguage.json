@@ -91,10 +91,8 @@
     },
     "music": {
       "patterns": [
-        {
-          "name": "constant.language.note.lilypond",
-          "match": "\\b([a-grR]([ie]?s{1,2}|f)?('*|,*))?((1|2|4|8|16|32|64|128|256|512|1024|\\\\breve|\\\\longa)\\.?(\\*\\d+(/\\d+)?)?)?(:(1|2|4|8|16|32|64))?[-_^]?(?!\\w)\\s*"
-        },
+        { "include": "#note-with-pitch" },
+        { "include": "#note-duration-only" },
         {
           "name": "meta.parallel.lilypond",
           "begin": "<<",
@@ -112,9 +110,65 @@
             { "include": "#music" }
           ]
         },
-        { "include": "#durations" },
         { "include": "#commands" },
         { "include": "#comments" }
+      ]
+    },
+    "note-with-pitch": {
+      "comment": "Note starting with a pitch: a-g for notes, r for rest, R for multi-measure rest, s for space",
+      "name": "meta.note.lilypond",
+      "begin": "\\b([a-grRs](?:(?:[ie]?s{1,2})+|f)?(?:'+|,+)?)((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*(?:\\*\\d+(?:/\\d+)?)?)?(?![a-zA-Z0-9])",
+      "beginCaptures": {
+        "1": { "name": "constant.language.pitch.lilypond" },
+        "2": { "name": "constant.numeric.duration.lilypond" }
+      },
+      "end": "(?=[\\s}\\]>)~|]|$)",
+      "patterns": [
+        { "include": "#note-divider" },
+        { "include": "#note-marks" }
+      ]
+    },
+    "note-duration-only": {
+      "comment": "Duration without preceding pitch (repeats previous pitch)",
+      "name": "meta.note.lilypond",
+      "begin": "(?<=^|[^a-zA-Z0-9\\\\])((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*(?:\\*\\d+(?:/\\d+)?)?)",
+      "beginCaptures": {
+        "1": { "name": "constant.numeric.duration.lilypond" }
+      },
+      "end": "(?=[\\s}\\]>)~|]|$)",
+      "patterns": [
+        { "include": "#note-divider" },
+        { "include": "#note-marks" }
+      ]
+    },
+    "note-duration": {
+      "comment": "Duration values: 1=whole, 2=half, 4=quarter, etc., with optional dots and multipliers",
+      "name": "constant.numeric.duration.lilypond",
+      "match": "(?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*(?:\\*\\d+(?:/\\d+)?)?"
+    },
+    "note-divider": {
+      "comment": "Tremolo or chord divider, e.g., :8 or :16",
+      "name": "constant.numeric.divider.lilypond",
+      "match": ":(?:64|32|16|8|4|2|1|m|7|m7|6|m6|5|sus|7sus4)"
+    },
+    "note-marks": {
+      "comment": "Articulations and commands attached to a note",
+      "patterns": [
+        {
+          "comment": "Direction indicator with articulation symbol",
+          "name": "keyword.operator.articulation.lilypond",
+          "match": "[-_^][.>^+|_-]"
+        },
+        {
+          "comment": "Standalone direction indicator before command",
+          "name": "keyword.operator.direction.lilypond",
+          "match": "[-_^](?=\\\\)"
+        },
+        {
+          "comment": "Backslash command attached to note (articulation, dynamic, etc.)",
+          "name": "support.function.articulation.lilypond",
+          "match": "\\\\[a-zA-Z]+"
+        }
       ]
     },
     "markup": {

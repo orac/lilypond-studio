@@ -1,0 +1,31 @@
+>% Valid: single duration per note
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4 d8 e2
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#    ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#     ^ source.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Standalone durations after tie and barline check
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>g2~2
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond keyword.operator.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>g2~|2
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond keyword.operator.lilypond
+#   ^ source.lilypond keyword.operator.lilypond
+#    ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Not valid LilyPond: c24 is not terminated by a non-alnum, so no note is matched
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c24
+#^^^^ source.lilypond
+>

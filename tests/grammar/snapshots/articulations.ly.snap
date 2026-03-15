@@ -1,0 +1,81 @@
+>% Articulation symbols
+#^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4-. d4-> e4-^ f4-+
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#           ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#            ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+#              ^ source.lilypond
+#               ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                 ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+>g4_. a4^>
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+>
+>% Backslash articulations attached to notes
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4\staccato d4\accent e4\fermata
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#           ^ source.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#              ^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#                     ^ source.lilypond
+#                      ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                       ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                        ^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+>f4\pp g4\ff a4\sfz
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#     ^ source.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#        ^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#           ^ source.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#              ^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+>
+>% Direction with backslash command
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4-\staccato d4^\fermata e4_\accent
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond meta.note.lilypond keyword.operator.direction.lilypond
+#   ^^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#            ^ source.lilypond
+#             ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#              ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#               ^ source.lilypond meta.note.lilypond keyword.operator.direction.lilypond
+#                ^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#                        ^ source.lilypond
+#                         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                          ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                           ^ source.lilypond meta.note.lilypond keyword.operator.direction.lilypond
+#                            ^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+>
+>% Multiple articulations on one note
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4-.\fermata\pp
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+#    ^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#            ^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+>

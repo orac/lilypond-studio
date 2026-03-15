@@ -1,0 +1,97 @@
+>% Chord notation
+#^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+><c e g>4 <d f a>8 <e g b>2
+#^ source.lilypond meta.chord.lilypond
+# ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#  ^ source.lilypond meta.chord.lilypond
+#   ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#    ^ source.lilypond meta.chord.lilypond
+#     ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond meta.chord.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.chord.lilypond
+#          ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#           ^ source.lilypond meta.chord.lilypond
+#            ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^ source.lilypond meta.chord.lilypond
+#              ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#               ^ source.lilypond meta.chord.lilypond
+#                ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                 ^ source.lilypond
+#                  ^ source.lilypond meta.chord.lilypond
+#                   ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                    ^ source.lilypond meta.chord.lilypond
+#                     ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                      ^ source.lilypond meta.chord.lilypond
+#                       ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                        ^ source.lilypond meta.chord.lilypond
+#                         ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Chords with articulations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+><c e g>4\staccato <d f a>8-.
+#^ source.lilypond meta.chord.lilypond
+# ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#  ^ source.lilypond meta.chord.lilypond
+#   ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#    ^ source.lilypond meta.chord.lilypond
+#     ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond meta.chord.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#        ^^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#                 ^ source.lilypond
+#                  ^ source.lilypond meta.chord.lilypond
+#                   ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                    ^ source.lilypond meta.chord.lilypond
+#                     ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                      ^ source.lilypond meta.chord.lilypond
+#                       ^ source.lilypond meta.chord.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                        ^ source.lilypond meta.chord.lilypond
+#                         ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                          ^^ source.lilypond meta.note.lilypond keyword.operator.articulation.lilypond
+>
+>% Parallel music
+#^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+><<
+#^^ source.lilypond meta.parallel.lilypond
+>  { c4 d e f }
+#^^^^ source.lilypond meta.parallel.lilypond
+#    ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#     ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#      ^ source.lilypond meta.parallel.lilypond
+#       ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.parallel.lilypond
+#         ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond meta.parallel.lilypond
+#           ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^^^ source.lilypond meta.parallel.lilypond
+>  { e4 f g a }
+#^^^^ source.lilypond meta.parallel.lilypond
+#    ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#     ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#      ^ source.lilypond meta.parallel.lilypond
+#       ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.parallel.lilypond
+#         ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^ source.lilypond meta.parallel.lilypond
+#           ^ source.lilypond meta.parallel.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^^^ source.lilypond meta.parallel.lilypond
+>>>
+#^^ source.lilypond meta.parallel.lilypond
+>
+>% Tremolo divider
+#^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4:8 d4:16 e2:32
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^ source.lilypond meta.note.lilypond constant.numeric.divider.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^^^ source.lilypond meta.note.lilypond constant.numeric.divider.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#             ^^^ source.lilypond meta.note.lilypond constant.numeric.divider.lilypond
+>

@@ -1,0 +1,83 @@
+>% Standalone commands (not attached to notes)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\relative c' {
+#^^^^^^^^^ source.lilypond support.function.lilypond
+#         ^ source.lilypond
+#          ^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^ source.lilypond
+#             ^ source.lilypond punctuation.section.braces.lilypond
+>  c4 d e f
+#^^ source.lilypond
+#  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>\time 4/4
+#^^^^^ source.lilypond support.function.lilypond
+#     ^ source.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^^ source.lilypond meta.note.lilypond
+>\key c \major
+#^^^^ source.lilypond support.function.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^ source.lilypond
+#       ^^^^^^ source.lilypond support.function.lilypond
+>\clef treble
+#^^^^^ source.lilypond support.function.lilypond
+#     ^^^^^^^^ source.lilypond
+>
+>% Variable declarations
+#^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>melody = { c4 d e f }
+#^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#         ^ source.lilypond punctuation.section.braces.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#             ^ source.lilypond
+#              ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#               ^ source.lilypond
+#                ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                 ^ source.lilypond
+#                  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                   ^ source.lilypond
+#                    ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Markup
+#^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\markup { Hello world }
+#^^^^^^^ source.lilypond meta.markup.lilypond support.function.lilypond
+#       ^ source.lilypond meta.markup.lilypond
+#        ^ source.lilypond meta.markup.lilypond punctuation.section.braces.lilypond
+#         ^^^^^^^^^^^^^ source.lilypond meta.markup.lilypond string.quoted.other
+#                      ^ source.lilypond meta.markup.lilypond punctuation.section.braces.lilypond
+>\markup \bold { Bold text }
+#^^^^^^^ source.lilypond support.function.lilypond
+#       ^ source.lilypond
+#        ^^^^^ source.lilypond support.function.lilypond
+#             ^ source.lilypond
+#              ^ source.lilypond punctuation.section.braces.lilypond
+#               ^^^^^^^^^^^ source.lilypond
+#                          ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Lyrics
+#^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\lyricmode {
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+>  Hel -- lo world
+#^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#      ^^ source.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
+#        ^^^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>

@@ -1,0 +1,90 @@
+>% Basic notes with pitches and durations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4 d8 e16 f32
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#    ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#     ^ source.lilypond
+#      ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#       ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#           ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>g2. a1
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#   ^ source.lilypond
+#    ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>b,,4 c''8
+#^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>r4 r8. R1
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#    ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Accidentals
+#^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>cis4 des8 eis16 fes32
+#^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^ source.lilypond
+#          ^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#               ^ source.lilypond
+#                ^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                   ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>gisis4 aeses8
+#^^^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#      ^ source.lilypond
+#       ^^^^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Duration only (repeats previous pitch)
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4 8 16 32
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^ source.lilypond
+#        ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Dotted durations
+#^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4. d8.. e16...
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#   ^ source.lilypond
+#    ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#     ^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#        ^ source.lilypond
+#         ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#          ^^^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Duration multipliers
+#^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4*2 d8*3/2
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#      ^^^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>

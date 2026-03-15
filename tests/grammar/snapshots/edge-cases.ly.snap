@@ -1,0 +1,75 @@
+>% Edge cases and potential problem areas
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>
+>% Breve and longa durations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c\breve d\longa
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^^^^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#       ^ source.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#         ^^^^^^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Comments
+#^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4 % inline comment
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^ source.lilypond
+#   ^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>%{ block comment %} d4
+#^^ source.lilypond comment.block.lilypond
+#  ^^^^^^^^^^^^^^^ source.lilypond comment.block.lilypond
+#                 ^^ source.lilypond comment.block.lilypond
+#                   ^ source.lilypond
+#                    ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                     ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+>
+>% Strings
+#^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\header { title = "Quoted \"string\" here" }
+#^^^^^^^ source.lilypond support.function.lilypond
+#       ^ source.lilypond
+#        ^ source.lilypond punctuation.section.braces.lilypond
+#         ^ source.lilypond
+#          ^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#                  ^ source.lilypond string.quoted.double.lilypond
+#                   ^^^^^^^ source.lilypond string.quoted.double.lilypond
+#                          ^^ source.lilypond string.quoted.double.lilypond constant.character.escape.lilypond
+#                            ^^^^^^ source.lilypond string.quoted.double.lilypond
+#                                  ^^ source.lilypond string.quoted.double.lilypond constant.character.escape.lilypond
+#                                    ^^^^^ source.lilypond string.quoted.double.lilypond
+#                                         ^ source.lilypond string.quoted.double.lilypond
+#                                          ^ source.lilypond
+#                                           ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Scheme expressions
+#^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>#(define foo 42)
+#^^^^^^^^^^^^^ source.lilypond
+#             ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#              ^ source.lilypond meta.note.lilypond
+#               ^^ source.lilypond
+>\override Staff.TimeSignature.stencil = #point-stencil
+#^^^^^^^^^ source.lilypond support.function.lilypond
+#         ^^^^^^^^^^^^^^^^^^^^^ source.lilypond
+#                              ^^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#                                        ^^^^^^^^^^^^^^^ source.lilypond
+>
+>% Ensure these don't match as notes
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\relative
+#^^^^^^^^^ source.lilypond support.function.lilypond
+>\clef
+#^^^^^ source.lilypond support.function.lilypond
+>\time
+#^^^^^ source.lilypond support.function.lilypond
+>
+>% Numbers that aren't durations
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\override Stem.length = 6
+#^^^^^^^^^ source.lilypond support.function.lilypond
+#         ^^^^^^ source.lilypond
+#               ^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#                        ^^ source.lilypond
+>
