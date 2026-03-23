@@ -92,10 +92,7 @@
       {
         "name": "lilypond",
         "owner": "lilypond",
-        "fileLocation": [
-          "relative",
-          "${workspaceFolder}"
-        ],
+        "fileLocation": "autoDetect",
         "pattern": {
           "regexp": "^(.+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
           "file": 1,
