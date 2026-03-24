@@ -5,7 +5,7 @@
 	<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src {{cspSource}}; style-src {{cspSource}} 'unsafe-inline'; img-src {{cspSource}} data:; connect-src {{cspSource}}; worker-src {{cspSource}} blob:; font-src {{cspSource}};">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>PDF Preview</title>
-	<link rel="stylesheet" href="{{codiconsUri}}">
+	<link id="vscode-codicon-stylesheet" rel="stylesheet" href="{{codiconsUri}}">
 	<link rel="modulepreload" href="{{pdfjsWorkerUri}}">
 	<script type="module" src="{{toolkitUri}}"></script>
 	<style>
@@ -85,8 +85,8 @@
 		#zoom-controls vscode-button {
 			height: 22px;
 		}
-		#zoom-controls vscode-button.icon-only {
-			padding: 0;
+		#zoom-controls vscode-toolbar-button {
+			height: 22px;
 			width: 22px;
 		}
 		#zoom-level {
@@ -109,17 +109,13 @@
 </head>
 <body>
 	<div id="zoom-controls">
-		<vscode-button id="zoom-out" appearance="icon" aria-label="Zoom Out (Ctrl+-)" title="Zoom Out (Ctrl+-)">
-			<span class="codicon codicon-zoom-out"></span>
-		</vscode-button>
+		<vscode-toolbar-button id="zoom-out" icon="zoom-out" label="Zoom Out (Ctrl+-)" title="Zoom Out (Ctrl+-)"></vscode-toolbar-button>
 		<span id="zoom-level">100%</span>
-		<vscode-button id="zoom-in" appearance="icon" aria-label="Zoom In (Ctrl++)" title="Zoom In (Ctrl++)">
-			<span class="codicon codicon-zoom-in"></span>
-		</vscode-button>
+		<vscode-toolbar-button id="zoom-in" icon="zoom-in" label="Zoom In (Ctrl++)" title="Zoom In (Ctrl++)"></vscode-toolbar-button>
 		<div class="zoom-separator"></div>
-		<vscode-button id="zoom-fit-width" appearance="secondary" title="Fit Width (Ctrl+0)">Fit Width</vscode-button>
-		<vscode-button id="zoom-fit-page" appearance="secondary" title="Fit Page (Ctrl+1)">Fit Page</vscode-button>
-		<vscode-button id="zoom-100" appearance="secondary" title="100% (Ctrl+2)">100%</vscode-button>
+		<vscode-button id="zoom-fit-width" secondary title="Fit Width (Ctrl+0)">Fit Width</vscode-button>
+		<vscode-button id="zoom-fit-page" secondary title="Fit Page (Ctrl+1)">Fit Page</vscode-button>
+		<vscode-button id="zoom-100" secondary title="100% (Ctrl+2)">100%</vscode-button>
 	</div>
 	<div id="loading">Loading PDF...</div>
 	<div id="pdf-container"></div>

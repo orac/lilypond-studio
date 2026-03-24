@@ -31,7 +31,7 @@ export class PdfViewerPanel {
 			enableScripts: true,
 			localResourceRoots: [
 				vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
 				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
 				vscode.Uri.joinPath(extensionUri, 'dist'),
 				pdfDir
@@ -60,7 +60,7 @@ export class PdfViewerPanel {
 				enableScripts: true,
 				localResourceRoots: [
 					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
 					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
 					vscode.Uri.joinPath(extensionUri, 'dist'),
 					pdfDir
@@ -90,7 +90,7 @@ export class PdfViewerPanel {
 				retainContextWhenHidden: true,
 				localResourceRoots: [
 					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit'),
+					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
 					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
 					vscode.Uri.joinPath(extensionUri, 'dist'),
 					pdfDir
@@ -362,9 +362,8 @@ export class PdfViewerPanel {
 			vscode.Uri.joinPath(this.extensionUri, 'dist', 'viewer.js')
 		);
 
-		// Get URI for the webview UI toolkit
 		const toolkitUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'webview-ui-toolkit', 'dist', 'toolkit.js')
+			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode-elements', 'elements', 'dist', 'bundled.js')
 		);
 
 		// Get URI for Codicons CSS

@@ -17,4 +17,3 @@ This is an extension to help you when editing LilyPond files in VS Code. It prov
 ## Known issues and limitations
 
 - Embedding LilyPond inside scheme (using `#{`…`#}`) doesn't quite work yet.
-- You can only view a PDF after engraving the corresponding .ly file.

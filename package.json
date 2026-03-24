@@ -119,14 +119,16 @@
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
-    "watch": "npm-run-all -p watch:*",
+    "watch": "npm-run-all -p watch:esbuild watch:tsc",
     "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:tsc": "npm-run-all -p watch:tsc:extension watch:tsc:viewer",
+    "watch:tsc:extension": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:tsc:viewer": "tsc --noEmit --watch --project src/viewer/tsconfig.json",
     "package": "npm run check-types && npm run lint && node esbuild.js --production",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc --project src/viewer/tsconfig.json --noEmit",
     "lint": "eslint src",
     "test": "npm run test:grammar && vscode-test",
     "test:grammar": "vscode-tmgrammar-snap tests/grammar/snapshots/**/*.ly",
@@ -146,8 +148,8 @@
     "vscode-tmgrammar-test": "^0.1.3"
   },
   "dependencies": {
+    "@vscode-elements/elements": "^2.5.1",
     "@vscode/codicons": "^0.0.44",
-    "@vscode/webview-ui-toolkit": "^1.4.0",
     "pdfjs-dist": "^5.4.530"
   }
 }

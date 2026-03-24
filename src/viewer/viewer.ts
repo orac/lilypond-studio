@@ -89,12 +89,11 @@ function updateZoomDisplay() {
 	const isInFitMode = currentZoomMode === ZoomMode.FitWidth || currentZoomMode === ZoomMode.FitPage;
 	zoomLevelDisplay.classList.toggle('fit-mode', isInFitMode);
 
-	// Update active state on buttons (using appearance attribute for vscode-button)
 	const fitWidthBtn = document.getElementById('zoom-fit-width')!;
 	const fitPageBtn = document.getElementById('zoom-fit-page')!;
 
-	fitWidthBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitWidth ? 'primary' : 'secondary');
-	fitPageBtn.setAttribute('appearance', currentZoomMode === ZoomMode.FitPage ? 'primary' : 'secondary');
+	fitWidthBtn.toggleAttribute('secondary', currentZoomMode !== ZoomMode.FitWidth);
+	fitPageBtn.toggleAttribute('secondary', currentZoomMode !== ZoomMode.FitPage);
 }
 
 function calculateFitWidthScale(pageWidth: number): number {
