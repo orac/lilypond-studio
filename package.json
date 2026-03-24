@@ -1,7 +1,9 @@
 {
+  "publisher": "TuftyIndigo",
   "name": "lilypond-studio",
   "displayName": "LilyPond Studio",
   "description": "Language support and preview for LilyPond, a music engraving system",
+  "keywords": ["music", "lilypond", "sheet music", "notation", "engraving"],
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.107.0"
