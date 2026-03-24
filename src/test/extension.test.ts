@@ -1,8 +1,13 @@
 import * as assert from 'assert';
-
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
 import * as vscode from 'vscode';
 
 suite('Extension Test Suite', () => {
+	test('extension activates and exports LilyPondInstallation', async () => {
+		const ext = vscode.extensions.all.find(e => e.id.includes('lilypond-studio'));
+		assert.ok(ext, 'Extension should be found');
+
+		const exports = await ext!.activate();
+		assert.ok(ext!.isActive, 'Extension should be active');
+		assert.ok(exports?.LilyPondInstallation, 'Extension should export LilyPondInstallation');
+	});
 });
