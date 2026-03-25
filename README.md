@@ -17,3 +17,5 @@ This is an extension to help you when editing LilyPond files in VS Code. It prov
 ## Known issues and limitations
 
 - Embedding LilyPond inside scheme (using `#{`…`#}`) doesn't quite work yet.
+- Creating the build tasks gets a bit confused with multi-root workspaces but it seems to work fine regardless.
+- It does the "highlight all uses of the symbol under the cursor" for every pitch, which can be a bit distracting.
