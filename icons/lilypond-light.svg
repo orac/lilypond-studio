@@ -1,14 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- Lilypad (darker green for light theme) -->
-  <ellipse cx="8" cy="9" rx="7" ry="5" fill="#2E7D32"/>
-  <!-- Notch in lilypad -->
-  <path d="M8 9 L8 14 L6 11 Z" fill="#fff"/>
-  <!-- Stem line on pad -->
-  <path d="M8 4 Q8 7 8 9" stroke="#1B5E20" stroke-width="0.5" fill="none"/>
-  <!-- Abstract flower petals (white) -->
-  <ellipse cx="8" cy="4" rx="1.5" ry="2.5" fill="#ffffff"/>
-  <ellipse cx="6" cy="5" rx="1.5" ry="2" fill="#ffffff" transform="rotate(-30 6 5)"/>
-  <ellipse cx="10" cy="5" rx="1.5" ry="2" fill="#ffffff" transform="rotate(30 10 5)"/>
-  <!-- Flower center -->
-  <circle cx="8" cy="5" r="1" fill="#FDD835"/>
-</svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg width="100%" height="100%" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;"><ellipse cx="8" cy="9" rx="7" ry="5" style="fill:#2e7d32;"/><path d="M8,4l0,5" style="fill:none;fill-rule:nonzero;stroke:#1b5e20;stroke-width:0.5px;"/><ellipse cx="8" cy="4" rx="1.5" ry="2.5" style="fill:#daddce;"/><path d="M5,3.268c0.717,-0.414 1.747,0.026 2.299,0.982c0.552,0.956 0.418,2.068 -0.299,2.482c-0.717,0.414 -1.747,-0.026 -2.299,-0.982c-0.552,-0.956 -0.418,-2.068 0.299,-2.482Z" style="fill:#daddce;"/><path d="M11,3.268c0.717,0.414 0.851,1.526 0.299,2.482c-0.552,0.956 -1.582,1.396 -2.299,0.982c-0.717,-0.414 -0.851,-1.526 -0.299,-2.482c0.552,-0.956 1.582,-1.396 2.299,-0.982Z" style="fill:#daddce;"/><circle cx="8" cy="5" r="1" style="fill:#fdd835;"/></svg>

@@ -1,3 +1,5 @@
-# Change Log
+# Changelog
 
-## First version
+## [0.1.0] - 2026-03-25
+
+First release.
