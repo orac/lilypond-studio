@@ -11,9 +11,9 @@ export class ConvertLyCodeActionProvider implements vscode.CodeActionProvider {
 
 	public async provideCodeActions(
 		document: vscode.TextDocument,
-		range: vscode.Range | vscode.Selection,
+		_range: vscode.Range | vscode.Selection,
 		context: vscode.CodeActionContext,
-		token: vscode.CancellationToken
+		_token: vscode.CancellationToken
 	): Promise<vscode.CodeAction[] | undefined> {
 		// Only provide actions for LilyPond files
 		if (document.languageId !== 'lilypond') {
@@ -29,20 +29,41 @@ export class ConvertLyCodeActionProvider implements vscode.CodeActionProvider {
 		const fileVersion = parseFileVersion(document);
 		const lilypondVersion = installation.getVersion();
 
-		// Only offer the action if:
-		// 1. We successfully detected the LilyPond version
-		// 2. The file has a \version directive
-		// 3. The file version is less than the LilyPond version
-		if (!lilypondVersion || !fileVersion) {
+		if (!lilypondVersion) {
 			return undefined;
 		}
 
-		if (compareVersions(fileVersion, lilypondVersion) < 0) {
-			const action = this.createUpgradeAction(document, fileVersion, lilypondVersion);
-			return [action];
+		const actions: vscode.CodeAction[] = [];
+
+		if (!fileVersion) {
+			const noVersionDiagnostic = context.diagnostics.find(d =>
+				d.code === 'missing-version' || d.message.includes('no \\version statement found')
+			);
+			if (noVersionDiagnostic) {
+				actions.push(this.createAddVersionAction(document, lilypondVersion));
+			}
+		} else if (compareVersions(fileVersion, lilypondVersion) < 0) {
+			actions.push(this.createUpgradeAction(document, fileVersion, lilypondVersion));
 		}
 
-		return undefined;
+		return actions.length > 0 ? actions : undefined;
+	}
+
+	private createAddVersionAction(
+		document: vscode.TextDocument,
+		lilypondVersion: string
+	): vscode.CodeAction {
+		const action = new vscode.CodeAction(
+			`Add \\version "${lilypondVersion}"`,
+			vscode.CodeActionKind.QuickFix
+		);
+
+		const edit = new vscode.WorkspaceEdit();
+		edit.insert(document.uri, new vscode.Position(0, 0), `\\version "${lilypondVersion}"\n`);
+		action.edit = edit;
+		action.isPreferred = true;
+
+		return action;
 	}
 
 	private createUpgradeAction(
@@ -99,7 +120,7 @@ export function registerConvertLyCommand(context: vscode.ExtensionContext): void
 						title: 'Running convert-ly...',
 						cancellable: false
 					},
-					async (progress) => {
+					async (_progress) => {
 						await installation.runConvertLy(uri.fsPath, outputChannel);
 					}
 				);

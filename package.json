@@ -117,6 +117,18 @@
           "severity": 4,
           "message": 5
         }
+      },
+      {
+        "name": "lilypond-no-column",
+        "owner": "lilypond",
+        "fileLocation": "autoDetect",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):\\s+(warning|error):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "message": 4
+        }
       }
     ],
     "customEditors": [

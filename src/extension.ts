@@ -184,7 +184,7 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 		taskName,
 		'lilypond',
 		execution,
-		'$lilypond'
+		['$lilypond', '$lilypond-no-column']
 	);
 
 	task.group = vscode.TaskGroup.Build;

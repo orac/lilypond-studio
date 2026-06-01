@@ -1,19 +1,14 @@
 import * as vscode from 'vscode';
 import { LilyPondInstallation, parseFileVersion, compareVersions } from './LilyPondInstallation';
 
-/**
- * Provides diagnostics for outdated LilyPond version directives, which can automatically be updated by running convert-ly.
- */
 export class VersionDiagnosticsProvider {
 	private diagnosticCollection: vscode.DiagnosticCollection;
+	private lastDiagnosticCodes = new Map<string, vscode.Diagnostic['code'][]>();
 
 	constructor() {
 		this.diagnosticCollection = vscode.languages.createDiagnosticCollection('lilypond-version');
 	}
 
-	/**
-	 * Analyzes a document and updates diagnostics
-	 */
 	public updateDiagnostics(document: vscode.TextDocument): void {
 		if (document.languageId !== 'lilypond') {
 			return;
@@ -23,8 +18,23 @@ export class VersionDiagnosticsProvider {
 		const fileVersion = parseFileVersion(document);
 		const lilypondVersion = LilyPondInstallation.getInstance()?.getVersion() ?? null;
 
-		// Only create diagnostic if both versions are available and file version is outdated
-		if (fileVersion && lilypondVersion && compareVersions(fileVersion, lilypondVersion) < 0) {
+		if (!fileVersion) {
+			// Suppress our diagnostic if the task runner has already reported this
+			const existing = vscode.languages.getDiagnostics(document.uri);
+			const taskReported = existing.some(d => d.message.includes('no \\version statement found'));
+			if (!taskReported) {
+				const firstLine = document.lineAt(0);
+				const range = new vscode.Range(0, 0, 0, firstLine.text.length);
+				const diagnostic = new vscode.Diagnostic(
+					range,
+					'No \\version statement found',
+					vscode.DiagnosticSeverity.Warning
+				);
+				diagnostic.code = 'missing-version';
+				diagnostic.source = 'lilypond';
+				diagnostics.push(diagnostic);
+			}
+		} else if (lilypondVersion && compareVersions(fileVersion, lilypondVersion) < 0) {
 			const versionMatch = document.getText().match(/\\version\s+"(\d+\.\d+\.\d+)"/);
 			if (versionMatch && versionMatch.index !== undefined) {
 				const startPos = document.positionAt(versionMatch.index);
@@ -36,34 +46,41 @@ export class VersionDiagnosticsProvider {
 					`LilyPond version ${fileVersion} is older than installed version ${lilypondVersion} and can automatically be updated`,
 					vscode.DiagnosticSeverity.Information
 				);
-
 				diagnostic.code = 'outdated-version';
 				diagnostic.source = 'lilypond';
-
 				diagnostics.push(diagnostic);
 			}
 		}
 
-		this.diagnosticCollection.set(document.uri, diagnostics);
+		this.setIfChanged(document.uri, diagnostics);
 	}
 
-	/**
-	 * Clears diagnostics for a document
-	 */
+	// Only calls diagnosticCollection.set() when the codes actually change, preventing
+	// the onDidChangeDiagnostics handler from re-triggering itself indefinitely.
+	private setIfChanged(uri: vscode.Uri, diagnostics: vscode.Diagnostic[]): void {
+		const key = uri.toString();
+		const newCodes = diagnostics.map(d => d.code);
+		const lastCodes = this.lastDiagnosticCodes.get(key);
+		const codeKey = (c: vscode.Diagnostic['code']) =>
+			c !== null && typeof c === 'object' ? c.value : c;
+		if (lastCodes !== undefined &&
+			newCodes.length === lastCodes.length &&
+			newCodes.every((c, i) => codeKey(c) === codeKey(lastCodes[i]))) {
+			return;
+		}
+		this.lastDiagnosticCodes.set(key, newCodes);
+		this.diagnosticCollection.set(uri, diagnostics);
+	}
+
 	public clearDiagnostics(document: vscode.TextDocument): void {
+		this.lastDiagnosticCodes.delete(document.uri.toString());
 		this.diagnosticCollection.delete(document.uri);
 	}
 
-	/**
-	 * Gets the diagnostic collection
-	 */
 	public getDiagnosticCollection(): vscode.DiagnosticCollection {
 		return this.diagnosticCollection;
 	}
 
-	/**
-	 * Updates diagnostics for all open LilyPond documents
-	 */
 	public updateAllDiagnostics(): void {
 		vscode.workspace.textDocuments.forEach(document => {
 			if (document.languageId === 'lilypond') {
@@ -73,13 +90,9 @@ export class VersionDiagnosticsProvider {
 	}
 }
 
-/**
- * Registers the version diagnostics provider
- */
 export function registerVersionDiagnostics(context: vscode.ExtensionContext): VersionDiagnosticsProvider {
 	const diagnosticsProvider = new VersionDiagnosticsProvider();
 
-	// Update diagnostics when a document is opened or changed
 	context.subscriptions.push(
 		vscode.workspace.onDidOpenTextDocument(document => {
 			diagnosticsProvider.updateDiagnostics(document);
@@ -98,12 +111,25 @@ export function registerVersionDiagnostics(context: vscode.ExtensionContext): Ve
 		})
 	);
 
-	// Update diagnostics for already open documents
+	// Re-evaluate when the task runner adds or removes diagnostics for a document,
+	// so we can suppress our own diagnostic if the build has already reported it.
+	context.subscriptions.push(
+		vscode.languages.onDidChangeDiagnostics(event => {
+			event.uris.forEach(uri => {
+				const document = vscode.workspace.textDocuments.find(
+					doc => doc.uri.toString() === uri.toString()
+				);
+				if (document) {
+					diagnosticsProvider.updateDiagnostics(document);
+				}
+			});
+		})
+	);
+
 	vscode.workspace.textDocuments.forEach(document => {
 		diagnosticsProvider.updateDiagnostics(document);
 	});
 
-	// Clean up diagnostic collection on deactivate
 	context.subscriptions.push(diagnosticsProvider.getDiagnosticCollection());
 
 	return diagnosticsProvider;
