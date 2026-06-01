@@ -283,9 +283,13 @@ export class LilyPondInstallation {
 	}
 
 	/**
-	 * Determines the path to the lilypond-words file
+	 * Determines the path to the lilypond-words file.
+	 *
+	 * Used both to load completions and to tell the language server where the
+	 * built-in command list lives. Returns null if the installation hasn't been
+	 * detected yet.
 	 */
-	private getWordsFilePath(): string | null {
+	public getWordsFilePath(): string | null {
 		if (!this.lilypondVersion || !this.lilypondPath) {
 			return null;
 		}

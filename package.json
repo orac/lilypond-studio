@@ -77,6 +77,11 @@
           },
           "default": [],
           "description": "Additional include directories for LilyPond. Each gets appended to the search paths when you use \\include in a file. On Windows, ensure you include the trailing slash."
+        },
+        "lilypondStudio.languageServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the ly-lsp language server executable. Leave empty to use the binary bundled with the extension. Set this to point at a locally-built server (e.g. ../ly-lsp/target/release/ly-lsp.exe) during development."
         }
       }
     },
@@ -160,6 +165,7 @@
   "dependencies": {
     "@vscode-elements/elements": "^2.5.1",
     "@vscode/codicons": "^0.0.44",
-    "pdfjs-dist": "^5.4.530"
+    "pdfjs-dist": "^5.4.530",
+    "vscode-languageclient": "^9.0.1"
   }
 }
