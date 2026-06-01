@@ -301,7 +301,7 @@ async function renderPages() {
 							...parsed
 						});
 					}
-				} catch (e) {
+				} catch {
 					// Ignore parsing errors
 				}
 			}
@@ -611,10 +611,8 @@ container.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // Pinch-to-zoom support for touchpads
-let lastPinchDistance = 0;
 container.addEventListener('gesturestart', (e: any) => {
 	e.preventDefault();
-	lastPinchDistance = 0;
 });
 
 container.addEventListener('gesturechange', (e: any) => {

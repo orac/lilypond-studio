@@ -110,7 +110,6 @@ export function registerConvertLyCommand(context: vscode.ExtensionContext): void
 				);
 
 				// Reload the document to show the changes
-				const document = await vscode.workspace.openTextDocument(uri);
 				const editor = vscode.window.visibleTextEditors.find(
 					e => e.document.uri.toString() === uri.toString()
 				);
