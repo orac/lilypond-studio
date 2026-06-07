@@ -176,7 +176,7 @@
     "note-divider": {
       "comment": "Tremolo or chord divider, e.g., :8 or :16",
       "name": "constant.numeric.divider.lilypond",
-      "match": ":(?:64|32|16|8|4|2|1|m|7|m7|6|m6|5|sus|7sus4)"
+      "match": ":(?:64|32|16|8|4|2|1|m|min|7|m7|min7|6|m6|5|sus|7sus4)"
     },
     "note-marks": {
       "comment": "Articulations and commands attached to a note",
