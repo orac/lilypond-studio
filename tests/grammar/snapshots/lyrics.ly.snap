@@ -1,0 +1,59 @@
+>% Basic lyricmode
+#^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\lyricmode {
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+>  Hel -- lo world
+#^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#      ^^ source.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
+#        ^^^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Nested braces must not end lyricmode early
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\lyricmode {
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+>  \repeat unfold 2 { la -- la }
+#^^ source.lilypond string.quoted.other.lyrics.lilypond
+#  ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
+#         ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                 ^ source.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
+#                  ^ source.lilypond string.quoted.other.lyrics.lilypond
+#                   ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#                    ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                        ^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
+#                          ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                              ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Doubly nested
+#^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\lyricmode {
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+>  \repeat unfold 2 { \repeat unfold 2 { la } }
+#^^ source.lilypond string.quoted.other.lyrics.lilypond
+#  ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
+#         ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                 ^ source.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
+#                  ^ source.lilypond string.quoted.other.lyrics.lilypond
+#                   ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#                    ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                     ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
+#                            ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                                    ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
+#                                     ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                                      ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#                                       ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                                           ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#                                            ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
+#                                             ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>

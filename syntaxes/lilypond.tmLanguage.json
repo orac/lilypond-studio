@@ -78,9 +78,29 @@
             { "include": "#markup" },
             { "include": "#commands" },
             { "include": "#durations" },
-            { "name": "constant.character.lilypond", "match": "--" }
+            { "name": "constant.character.lilypond", "match": "--" },
+            { "include": "#lyrics-brace-block" }
           ]
         }
+      ]
+    },
+    "lyrics-brace-block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.braces.lilypond" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.section.braces.lilypond" }
+      },
+      "contentName": "string.quoted.other.lyrics.lilypond",
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#markup" },
+        { "include": "#commands" },
+        { "include": "#durations" },
+        { "name": "constant.character.lilypond", "match": "--" },
+        { "include": "#lyrics-brace-block" }
       ]
     },
     "strings": {
