@@ -2,13 +2,18 @@
 
 This is an extension to help you when editing LilyPond files in VS Code. It provides:-
 * Syntax highlighting
+* Red squiggles for (some) syntax errors as you type, before even running LilyPond
 * Tab-completion of built-in commands
-* Go to definition and find references for variables, plus syntax-error diagnostics as you type, powered by a bundled language server
+* Go to definition and find references for variables (only basic `foo = { music }` for now, not Scheme commands)
 * Build tasks for engraving in preview/publish modes
     * Problem parser highlights warnings and errors in context in the source file
 * An auto-updating preview of the output PDF
 * Hovering/clicking an item in the PDF highlights/selects the relevant text in the .ly file. Your cursor or selection in the .ly file highlight the relevant notation in the PDF.
-* Detects old `\version` and can run convert-ly for you.
+* Code actions and refactorings to:
+    * Add the right `\version` to a new file, or run `convert-ly` to update an old file
+    * Extract the selected music to a variable
+    * Inline a variable where it's used
+    * Unfold repeats
 
 ![A screenshot showing the functionality](docs/screenshot%201.png?raw=true)
 
@@ -26,7 +31,7 @@ I made this because I've been using Frescobaldi for years, but I want the full p
 - Hit ctrl-shift-b to "run build task" and then choose "Engrave (Preview)" from the list. You can also set it as the default build task if you like.
     - Preview mode embeds point-and-click information in the generated PDF, so you can click on notes to go to the right place in the source file, and vice-versa. This makes the file much larger, and it gives away the path to the source file on your computer. When making a PDF to distribute or keep, use "Engrave (Publish)".
 - The PDF will automatically open next to the input file and update live whenever it is updated on disk.
-- Edit the file and hit ctrl-shift-b again. E
+- Edit the file and hit ctrl-shift-b again.
 
 ## Building from source
 
@@ -43,8 +48,6 @@ While iterating on the server you can skip the copy step: set `lilypondStudio.la
 
 - Embedding LilyPond inside scheme (using `#{`…`#}`) doesn't quite work yet.
 - Creating the build tasks gets a bit confused with multi-root workspaces but it seems to work fine regardless.
-- It does the "highlight all uses of the symbol under the cursor" for every pitch, which can be a bit distracting.
 - The build task always puts the output file next to the input. I want to add more customization for people with more complex file layouts, but I need to hear from you to know what kind of settings would be useful.
 - You can use snippets if you like, but the extension doesn't ship with any. If you find some useful, please let me know and I'll include them!
-- Commands/variables you define don't get tab-completed.
 - Only tested on Windows. MacOS and Linux users, please send me your feedback. I'm also interested in whether anyone would want this in web (vscode.dev) instead of desktop.
