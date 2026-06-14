@@ -189,7 +189,7 @@ function createLilypondTask(mode: 'preview' | 'publish'): vscode.Task {
 
 	task.group = vscode.TaskGroup.Build;
 	task.presentationOptions = {
-		reveal: vscode.TaskRevealKind.Always,
+		reveal: vscode.TaskRevealKind.Silent,
 		panel: vscode.TaskPanelKind.Dedicated,
 		clear: true,
 		showReuseMessage: false,
