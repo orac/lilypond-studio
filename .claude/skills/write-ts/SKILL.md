@@ -2,10 +2,10 @@
 name: write-ts
 description: Use this skill every time you edit or write TypeScript code.
 ---
-Write readable, maintainable TypeScript code making best use of the type system. Run `npm lint:fix` when you're done, but not while debugging or iterating on a change. Follow the "Boy Scout" rule by leaving the code cleaner than you found it. Proactively refactor duplicate/repetitive code. Write unit tests for all non-trivial functions and components.
+Write readable, maintainable TypeScript code making best use of the type system. Run `npm lint -- --fix` when you're done, and fix any warnings that could not be fixed automatically. Follow the "Boy Scout" rule by leaving the code cleaner than you found it. Proactively refactor duplicate/repetitive code, and split large files into smaller modules. Write unit tests for all non-trivial functions and components.
 
 ## Code style
-- No line length limit. Wrap only to express structure: long argument lists, object/array literals.
+- No line length limit. Wrap lines only to express structure: long argument lists, object/array literals, and between statements.
 - Spaces for indentation, never for alignment. No ASCII art, tables, or aligned `=` signs.
 - No banner comments to separate sections. Use `describe` blocks in tests, separate functions/classes/files instead.
 - Use semicolons.
@@ -34,5 +34,5 @@ Write readable, maintainable TypeScript code making best use of the type system.
 - No line length limit. Use a blank line to wrap long prose into paragraphs. Don't wrap mid-sentence.
 - Document preconditions, side-effects, and possible exceptions — what a caller needs to know before calling.
 - Don't describe the algorithm step-by-step. If you need to document the internals of a function, use regular comments inside the function.
-- Document parameters only when the name/type doesn't fully express meaning (units, null semantics, defaults).
+- Use `@param` to document parameters only when the name/type doesn't fully express meaning (units, null semantics, defaults). Don't repeat the type.
 - Describe interface members in comments on the member itself, not on the interface.
