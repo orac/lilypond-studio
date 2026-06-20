@@ -162,7 +162,7 @@
     "note-with-pitch": {
       "comment": "Note starting with a pitch: a-g for notes, r for rest, R for multi-measure rest, s for space",
       "name": "meta.note.lilypond",
-      "begin": "\\b([a-grRs](?:(?:[ie]?s{1,2})+|f)?(?:'+|,+)?)((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*)?(?![a-zA-Z0-9])",
+      "begin": "\\b([a-grRs](?:(?:[ie]?s{1,2})+|f)?(?:'+|,+)?(?:\\?|\\!)?)((?:1024|512|256|128|64|32|16|8|4|2|1|\\\\breve|\\\\longa)\\.*)?(?![a-zA-Z0-9])",
       "beginCaptures": {
         "1": { "name": "constant.language.pitch.lilypond" },
         "2": { "name": "constant.numeric.duration.lilypond" }
