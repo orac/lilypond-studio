@@ -82,9 +82,21 @@
           "type": "string",
           "default": "",
           "description": "Path to the ly-lsp language server executable. Leave empty to use the binary bundled with the extension. Set this to point at a locally-built server (e.g. ../ly-lsp/target/release/ly-lsp.exe) during development."
+        },
+        "lilypondStudio.engraveOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically re-engrave a LilyPond file whenever it is saved, using the most recent engrave mode (preview or publish)."
         }
       }
     },
+    "commands": [
+      {
+        "command": "lilypondStudio.toggleEngraveOnSave",
+        "title": "Toggle Engrave on Save",
+        "category": "LilyPond"
+      }
+    ],
     "taskDefinitions": [
       {
         "type": "lilypond",

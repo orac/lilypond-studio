@@ -2,18 +2,23 @@
 
 This is an extension to help you when editing LilyPond files in VS Code. It provides:-
 * Syntax highlighting
+    * Integrates with Scheme extensions to highlight embedded Scheme
 * Red squiggles for (some) syntax errors as you type, before even running LilyPond
-* Tab-completion of built-in commands
-* Go to definition and find references for variables (only basic `foo = { music }` for now, not Scheme commands)
-* Build tasks for engraving in preview/publish modes
-    * Problem parser highlights warnings and errors in context in the source file
-* An auto-updating preview of the output PDF
-* Hovering/clicking an item in the PDF highlights/selects the relevant text in the .ly file. Your cursor or selection in the .ly file highlight the relevant notation in the PDF.
+* **Tab-completion** of built-in commands, and variables in your file
+* **Go to definition** and **find references** for variables (only basic `foo = { music }` for now, not Scheme commands)
+* **Build tasks** for engraving in preview/publish modes
+    * Optional **engrave on save**
+    * Problem parser gives you **red squiggles for LilyPond warnings and errors**
+* Side-by-side **PDF preview**, which auto-updates when the PDF changes
+* Supports LilyPond's **point-and-click** PDFs:
+    * Hovering/clicking an item in the PDF highlights/selects the relevant text in the .ly file.
+    * Your cursor or selection in the .ly file highlight the relevant notation in the PDF.
 * Code actions and refactorings to:
     * Add the right `\version` to a new file, or run `convert-ly` to update an old file
     * Extract the selected music to a variable
     * Inline a variable where it's used
-    * Unfold repeats
+    * Unfold repeats (e.g. `\repeat volta 2 { a b c | }` → `a b c | a b c`)
+    * Add explicit notes and/or durations to music that omits it (e.g. `g4 g g g` to `g4 g4 g4 g4`).
 
 ![A screenshot showing the functionality](docs/screenshot%201.png?raw=true)
 
