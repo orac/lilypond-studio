@@ -4,7 +4,7 @@
 
 First release.
 
-## [0.2.0] - 2026-07-26
+## [0.2.0] - test only, unreleased
 
 Big changes!
 
@@ -13,3 +13,8 @@ Big changes!
 - Add language server to enable language server features including a bunch of code actions and error checking.
 - Add more detail to the non-LSP syntax parsing.
 - Add engrave-on-save option.
+- Add "Report issue..." support with debug info
+
+## [0.2.1] - 2026-07-26
+
+As 0.2.0 but also fixes an alarming error message from the PDF viewer fix that wasn't visible until the .vsix was tested. This also makes it much quicker to load!

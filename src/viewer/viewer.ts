@@ -99,7 +99,7 @@ const linksByPosition = new Map<string, TexteditLink[]>();
 // Store loaded pages and annotations (populated by loadPdf, used by renderPages)
 let storedPages: StoredPage[] = [];
 
-let pdfjsLib;
+let pdfjsLib: any;
 
 function updateZoomDisplay() {
 	// Show percentage relative to actual size (not raw PDF scale)
@@ -130,6 +130,24 @@ function calculateFitPageScale(pageWidth: number, pageHeight: number): number {
 	return Math.min(widthScale, heightScale);
 }
 
+/** The pdf.js worker, created once and shared by every document this webview loads. */
+let pdfWorkerPromise: Promise<any> | undefined;
+
+/** Starts the pdf.js worker ourselves, bypassing pdf.js's own worker loading.
+ *
+ * Left to itself, pdf.js compares the worker's URL against `window.location` to decide whether it is same-origin. In a webview it always concludes that it is not — the document is `vscode-webview://…` while its resources come from `https://file+.vscode-resource.vscode-cdn.net` — so it wraps the worker in a blob that does `await import(<resource url>)`. That is a cross-origin module fetch from an opaque origin, the resource server refuses it, and the worker dies before it starts. pdf.js recovers by running the worker's code on the main thread, so pages still render, but they render on the UI thread and the failure surfaces as an alarming uncaught TypeError.
+ *
+ * Fetching the bundle and starting the `Worker` from a blob of its source avoids the cross-origin fetch, and handing pdf.js the live worker as a `port` skips its origin check altogether rather than trying to satisfy it. The worker bundle has no static imports, so nothing depends on where it is loaded from.
+ */
+async function startPdfWorker(): Promise<any> {
+	const response = await fetch(config.pdfjsWorkerUri);
+	if (!response.ok) {
+		throw new Error(`Fetching the pdf.js worker returned ${response.status} ${response.statusText}`);
+	}
+	const blobUrl = URL.createObjectURL(new Blob([await response.text()], { type: 'text/javascript' }));
+	return new pdfjsLib.PDFWorker({ port: new Worker(blobUrl, { type: 'module' }) });
+}
+
 /**
  * Loads the PDF document and extracts annotations.
  * Called on initial load and when the PDF file changes.
@@ -138,10 +156,14 @@ async function loadPdf() {
 	try {
 		pdfjsLib = await import(config.pdfjsUri);
 
-		// Configure PDF.js worker
-		pdfjsLib.GlobalWorkerOptions.workerSrc = config.pdfjsWorkerUri;
+		// If starting the worker fails, leave pdf.js to its own devices: it falls back to rendering on the main thread, which is slow but correct.
+		pdfWorkerPromise ??= startPdfWorker().catch(error => {
+			log(`Could not start the pdf.js worker (${error}); falling back to main-thread rendering.`);
+			pdfjsLib.GlobalWorkerOptions.workerSrc = config.pdfjsWorkerUri;
+			return undefined;
+		});
 
-		const loadingTask = pdfjsLib.getDocument(config.pdfUrl);
+		const loadingTask = pdfjsLib.getDocument({ url: config.pdfUrl, worker: await pdfWorkerPromise });
 		const pdf = await loadingTask.promise;
 
 		pdfDocument = pdf;

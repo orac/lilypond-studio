@@ -395,7 +395,6 @@ export class PdfViewerPanel {
 			.replace('{{codiconsUri}}', codiconsUri)
 			.replace('{{toolkitUri}}', toolkitUri)
 			.replace('{{viewerScriptUri}}', viewerScriptUri)
-			.replace('{{pdfjsWorkerUri}}', pdfjsWorkerUri)
 			.replace('{{viewerConfig}}', JSON.stringify(config).replace(/"/g, '&quot;'));
 	}
 }
