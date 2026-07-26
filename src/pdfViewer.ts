@@ -2,6 +2,20 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
+/** Builds the webview options for a panel showing `pdfUri`.
+ *
+ * Everything the webview loads lives under `dist/` — the bundled viewer script, the HTML template, and the third-party assets that `esbuild.js` copies out of `node_modules`, which is not packaged into the VSIX. The PDF's own directory has to be granted separately since it is outside the extension.
+ */
+function webviewOptions(extensionUri: vscode.Uri, pdfUri: vscode.Uri): vscode.WebviewOptions {
+	return {
+		enableScripts: true,
+		localResourceRoots: [
+			vscode.Uri.joinPath(extensionUri, 'dist'),
+			vscode.Uri.file(path.dirname(pdfUri.fsPath)),
+		],
+	};
+}
+
 /** Manages a PDF viewer webview panel */
 export class PdfViewerPanel {
 	public static currentPanel: PdfViewerPanel | undefined;
@@ -26,17 +40,7 @@ export class PdfViewerPanel {
 		}
 
 		// Set up the existing panel with our configuration
-		const pdfDir = vscode.Uri.file(path.dirname(pdfUri.fsPath));
-		existingPanel.webview.options = {
-			enableScripts: true,
-			localResourceRoots: [
-				vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
-				vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
-				vscode.Uri.joinPath(extensionUri, 'dist'),
-				pdfDir
-			]
-		};
+		existingPanel.webview.options = webviewOptions(extensionUri, pdfUri);
 
 		existingPanel.title = path.basename(pdfUri.fsPath);
 
@@ -55,17 +59,7 @@ export class PdfViewerPanel {
 			PdfViewerPanel.currentPanel.sourceUri = sourceUri;
 
 			// Update localResourceRoots to include the new PDF directory
-			const pdfDir = vscode.Uri.file(path.dirname(pdfUri.fsPath));
-			PdfViewerPanel.currentPanel.panel.webview.options = {
-				enableScripts: true,
-				localResourceRoots: [
-					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
-					vscode.Uri.joinPath(extensionUri, 'dist'),
-					pdfDir
-				]
-			};
+			PdfViewerPanel.currentPanel.panel.webview.options = webviewOptions(extensionUri, pdfUri);
 
 			// Update panel title to show the new PDF filename
 			PdfViewerPanel.currentPanel.panel.title = path.basename(pdfUri.fsPath);
@@ -77,24 +71,14 @@ export class PdfViewerPanel {
 			return;
 		}
 
-		// Get the directory containing the PDF for localResourceRoots
-		const pdfDir = vscode.Uri.file(path.dirname(pdfUri.fsPath));
-
 		// Otherwise, create a new panel
 		const panel = vscode.window.createWebviewPanel(
 			'lilypondPdfPreview',
 			path.basename(pdfUri.fsPath),
 			{ viewColumn: column, preserveFocus: true },
 			{
-				enableScripts: true,
 				retainContextWhenHidden: true,
-				localResourceRoots: [
-					vscode.Uri.joinPath(extensionUri, 'node_modules', 'pdfjs-dist'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode-elements', 'elements'),
-					vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode', 'codicons'),
-					vscode.Uri.joinPath(extensionUri, 'dist'),
-					pdfDir
-				]
+				...webviewOptions(extensionUri, pdfUri),
 			}
 		);
 
@@ -346,49 +330,36 @@ export class PdfViewerPanel {
 	}
 
 	private getHtmlForWebview(webview: vscode.Webview): string {
-		// Get URIs for PDF.js resources
-		const pdfjsUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.mjs')
-		);
-		const pdfjsWorkerUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'node_modules', 'pdfjs-dist', 'build', 'pdf.worker.mjs')
-		);
+		const distUri = vscode.Uri.joinPath(this.extensionUri, 'dist');
+		const assetUri = (...segments: string[]) => webview.asWebviewUri(vscode.Uri.joinPath(distUri, ...segments)).toString();
+
+		const pdfjsUri = assetUri('vendor', 'pdf.mjs');
+		const pdfjsWorkerUri = assetUri('vendor', 'pdf.worker.mjs');
+		const toolkitUri = assetUri('vendor', 'elements.js');
+		const codiconsUri = assetUri('vendor', 'codicon.css');
+		const viewerScriptUri = assetUri('viewer.js');
 
 		// Get URI for the PDF file
 		const pdfFileUri = webview.asWebviewUri(this.pdfUri);
 
-		// Get URIs for viewer resources
-		const viewerScriptUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'dist', 'viewer.js')
-		);
-
-		const toolkitUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode-elements', 'elements', 'dist', 'bundled.js')
-		);
-
-		// Get URI for Codicons CSS
-		const codiconsUri = webview.asWebviewUri(
-			vscode.Uri.joinPath(this.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css')
-		);
-
 		// Read the HTML template
-		const htmlPath = vscode.Uri.joinPath(this.extensionUri, 'src', 'viewer', 'viewer.html');
+		const htmlPath = vscode.Uri.joinPath(distUri, 'viewer.html');
 		const htmlContent = fs.readFileSync(htmlPath.fsPath, 'utf8');
 
 		// Prepare configuration as JSON
 		const config = {
 			pdfUrl: pdfFileUri.toString(),
-			pdfjsUri: pdfjsUri.toString(),
-			pdfjsWorkerUri: pdfjsWorkerUri.toString(),
+			pdfjsUri,
+			pdfjsWorkerUri,
 		};
 
 		// Replace placeholders in the HTML template
 		return htmlContent
 			.replace(/{{cspSource}}/g, webview.cspSource)
-			.replace('{{codiconsUri}}', codiconsUri.toString())
-			.replace('{{toolkitUri}}', toolkitUri.toString())
-			.replace('{{viewerScriptUri}}', viewerScriptUri.toString())
-			.replace('{{pdfjsWorkerUri}}', pdfjsWorkerUri.toString())
+			.replace('{{codiconsUri}}', codiconsUri)
+			.replace('{{toolkitUri}}', toolkitUri)
+			.replace('{{viewerScriptUri}}', viewerScriptUri)
+			.replace('{{pdfjsWorkerUri}}', pdfjsWorkerUri)
 			.replace('{{viewerConfig}}', JSON.stringify(config).replace(/"/g, '&quot;'));
 	}
 }
