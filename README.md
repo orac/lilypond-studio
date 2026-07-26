@@ -38,6 +38,10 @@ I made this because I've been using Frescobaldi for years, but I want the full p
 - The PDF will automatically open next to the input file and update live whenever it is updated on disk.
 - Edit the file and hit ctrl-shift-b again.
 
+If you want to edit the file and rebuild the PDF automatically every time you save, you can turn this on in the *language menu* (the `{ }` icon in the bottom-right). You always need to build with ctrl-shift-b first to activate it: a precaution to avoid overwriting PDFs when you didn't mean to.
+
+![A screenshot of the language menu with engrave-on-save turned on](docs/language%20menu.png)
+
 ## Building from source
 
 The extension's TypeScript is built with `npm run compile` (or `npm run watch` while developing). The bundled language server is a separate Rust crate, [ly-lsp](https://github.com/orac/ly-lsp), included here as a git submodule in `ly-lsp/` so that each extension commit pins the exact server revision it ships with. Clone with `--recurse-submodules`, or run `git submodule update --init` in an existing checkout. It's built manually:

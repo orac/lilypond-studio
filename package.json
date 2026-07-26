@@ -181,7 +181,8 @@
     "lint": "oxlint src",
     "test": "npm run test:grammar && vscode-test",
     "test:grammar": "vscode-tmgrammar-snap tests/grammar/snapshots/**/*.ly",
-    "test:grammar:update": "vscode-tmgrammar-snap -u tests/grammar/snapshots/**/*.ly"
+    "test:grammar:update": "vscode-tmgrammar-snap -u tests/grammar/snapshots/**/*.ly",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
