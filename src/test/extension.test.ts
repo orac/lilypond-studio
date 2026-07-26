@@ -10,4 +10,12 @@ suite('Extension Test Suite', () => {
 		assert.ok(ext!.isActive, 'Extension should be active');
 		assert.ok(exports?.LilyPondInstallation, 'Extension should export LilyPondInstallation');
 	});
+
+	test('diagnostics command is registered and runs', async () => {
+		const commands = await vscode.commands.getCommands(true);
+		assert.ok(commands.includes('lilypondStudio.showDiagnostics'), 'Diagnostics command should be registered');
+
+		// It reports on a possibly-absent LilyPond and a possibly-unstarted language server, so it has to survive both.
+		await vscode.commands.executeCommand('lilypondStudio.showDiagnostics');
+	});
 });

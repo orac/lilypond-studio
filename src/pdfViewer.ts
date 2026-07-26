@@ -1,6 +1,25 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { log } from './log';
+
+/** A self-contained page describing why the viewer could not start.
+ *
+ * Deliberately uses no scripts, stylesheets or fonts: it has to render in exactly the situation where loading the viewer's own resources is what failed.
+ */
+function errorPageHtml(error: unknown): string {
+	const detail = error instanceof Error ? `${error.message}\n\n${error.stack ?? ''}` : String(error);
+	const escaped = detail.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+	return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>PDF Preview</title></head>
+<body style="font-family: var(--vscode-font-family); padding: 2em;">
+	<h2>The PDF preview failed to load</h2>
+	<p>Please report this, quoting the details below and the contents of the <strong>LilyPond Studio</strong> output channel (View &rarr; Output).</p>
+	<pre style="white-space: pre-wrap; user-select: text;">${escaped}</pre>
+</body>
+</html>`;
+}
 
 /** Builds the webview options for a panel showing `pdfUri`.
  *
@@ -122,7 +141,16 @@ export class PdfViewerPanel {
 						this.syncCurrentPosition();
 						return;
 					case 'error':
-						vscode.window.showErrorMessage(`PDF Viewer: ${message.message}`);
+						log.error(`PDF viewer webview: ${message.message}`);
+						vscode.window.showErrorMessage(`PDF Viewer: ${message.message}`, 'Show Log')
+							.then(choice => {
+								if (choice === 'Show Log') {
+									log.show();
+								}
+							});
+						return;
+					case 'log':
+						log.debug(`PDF viewer webview: ${message.message}`);
 						return;
 				}
 			},
@@ -212,7 +240,7 @@ export class PdfViewerPanel {
 			);
 		} catch (error) {
 			vscode.window.showErrorMessage(`Failed to parse point-and-click URI: ${uri}`);
-			console.error('Point-and-click error:', error);
+			log.error('Point-and-click error', error);
 		}
 	}
 
@@ -252,7 +280,7 @@ export class PdfViewerPanel {
 			const endPosition = new vscode.Position(line - 1, charEnd);
 			editor.setDecorations(this.hoverDecorationType, [new vscode.Range(startPosition, endPosition)]);
 		} catch (error) {
-			console.error('Hover decoration error:', error);
+			log.error('Hover decoration error', error);
 		}
 	}
 
@@ -324,9 +352,17 @@ export class PdfViewerPanel {
 		});
 	}
 
+	/** Renders the viewer into the panel.
+	 *
+	 * Failures here are caught and turned into a visible error page: if the HTML is never assigned the panel just sits there empty, which tells neither the user nor us anything at all.
+	 */
 	private update() {
-		const webview = this.panel.webview;
-		this.panel.webview.html = this.getHtmlForWebview(webview);
+		try {
+			this.panel.webview.html = this.getHtmlForWebview(this.panel.webview);
+		} catch (error) {
+			log.error('Failed to build the PDF viewer HTML', error);
+			this.panel.webview.html = errorPageHtml(error);
+		}
 	}
 
 	private getHtmlForWebview(webview: vscode.Webview): string {

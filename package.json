@@ -12,6 +12,10 @@
   ],
   "version": "0.1.0",
   "repository": "https://github.com/orac/lilypond-studio",
+  "bugs": {
+    "url": "https://github.com/orac/lilypond-studio/issues"
+  },
+  "qna": "https://github.com/orac/lilypond-studio/issues",
   "license": "MIT",
   "icon": "icons/lilypond-light.png",
   "engines": {
@@ -94,6 +98,11 @@
       {
         "command": "lilypondStudio.toggleEngraveOnSave",
         "title": "Toggle Engrave on Save",
+        "category": "LilyPond"
+      },
+      {
+        "command": "lilypondStudio.showDiagnostics",
+        "title": "Show Diagnostics",
         "category": "LilyPond"
       }
     ],

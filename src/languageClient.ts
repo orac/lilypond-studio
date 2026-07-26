@@ -8,6 +8,7 @@ import {
 	TransportKind,
 } from 'vscode-languageclient/node';
 import { LilyPondInstallation } from './LilyPondInstallation';
+import { log } from './log';
 
 /**
  * Location of the bundled ly-lsp binary, relative to the extension root.
@@ -94,7 +95,7 @@ export class LilyPondLanguageClient {
 	 */
 	private enqueue(task: () => Promise<void>): Promise<void> {
 		const run = this.operation.then(task, task).catch((error) => {
-			console.error('LilyPond language server lifecycle error:', error);
+			log.error('LilyPond language server lifecycle error', error);
 		});
 		this.operation = run;
 		return run;
@@ -107,7 +108,7 @@ export class LilyPondLanguageClient {
 
 		const serverPath = this.resolveServerPath();
 		if (!fs.existsSync(serverPath)) {
-			console.warn(
+			log.warn(
 				`ly-lsp binary not found at ${serverPath}; language server features are disabled. ` +
 				'Build the server crate and copy the binary into the extension\'s server/ directory, ' +
 				'or set lilypondStudio.languageServerPath to a locally-built server.'
@@ -137,6 +138,7 @@ export class LilyPondLanguageClient {
 		// leave a half-dead client that blocks future starts.
 		await client.start();
 		this.client = client;
+		log.info(`Language server started from ${serverPath}`);
 	}
 
 	private async doStop(): Promise<void> {
@@ -152,7 +154,7 @@ export class LilyPondLanguageClient {
 	 * the binary bundled with the extension. The override lets you point at a
 	 * locally-built server during development without copying it into server/.
 	 */
-	private resolveServerPath(): string {
+	public resolveServerPath(): string {
 		const override = vscode.workspace
 			.getConfiguration('lilypondStudio')
 			.get<string>('languageServerPath')

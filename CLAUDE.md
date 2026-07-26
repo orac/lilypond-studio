@@ -48,6 +48,8 @@ The build is orchestrated by `esbuild.js`, which bundles both targets; it accept
 | File | Role |
 |------|------|
 | `src/extension.ts` | Activation, provider registration |
+| `src/log.ts` | Shared "LilyPond Studio" log channel; use instead of `console` |
+| `src/diagnosticsCommand.ts` | "LilyPond: Show Diagnostics" environment report for bug reports |
 | `src/languageClient.ts` | LSP client lifecycle |
 | `src/LilyPondInstallation.ts` | Detects LilyPond on the user's system |
 | `src/pdfViewer.ts` | Webview panel management |

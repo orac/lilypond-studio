@@ -3,6 +3,7 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as readline from 'readline';
 import * as path from 'path';
+import { log } from './log';
 
 /**
  * Compares two version strings
@@ -238,7 +239,7 @@ export class LilyPondInstallation {
 		// Parse version from first line: "GNU LilyPond 2.24.1 (running Guile 2.2)"
 		const versionMatch = versionOutput.match(/GNU LilyPond\s+(\d+\.\d+\.\d+)/);
 		if (!versionMatch) {
-			console.error('Failed to parse LilyPond version from output:', versionOutput);
+			log.error(`Failed to parse LilyPond version from ${lilypondExePath} --version output: ${versionOutput}`);
 			return null;
 		}
 
@@ -253,9 +254,9 @@ export class LilyPondInstallation {
 		this.pythonPath = path.join(binDir, 'python.exe');
 		this.convertLyPath = path.join(binDir, 'convert-ly.py');
 
-		console.log(`Detected LilyPond version: ${this.lilypondVersion}`);
-		console.log(`Python path: ${this.pythonPath}`);
-		console.log(`convert-ly path: ${this.convertLyPath}`);
+		log.info(`Detected LilyPond ${this.lilypondVersion} at ${this.lilypondPath}`);
+		log.debug(`Python path: ${this.pythonPath}`);
+		log.debug(`convert-ly path: ${this.convertLyPath}`);
 
 		return this.lilypondVersion;
 	}

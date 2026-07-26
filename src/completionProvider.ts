@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { LilyPondInstallation } from './LilyPondInstallation';
+import { log } from './log';
 
 /**
  * Provides autocomplete suggestions for LilyPond commands
@@ -60,10 +61,10 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 				this.completionItems.push(item);
 			}
 
-			console.log(`Loaded ${this.completionItems.length} completions from lilypond-words`);
+			log.info(`Loaded ${this.completionItems.length} completions from lilypond-words`);
 		} catch (error) {
 			// Don't show error to user - LilyPondInstallation handles that
-			console.error('Error loading LilyPond completions:', error);
+			log.error('Error loading LilyPond completions', error);
 		}
 	}
 

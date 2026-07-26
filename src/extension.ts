@@ -8,10 +8,16 @@ import { registerVersionDiagnostics } from './versionDiagnostics';
 import { registerCompletionProvider } from './completionProvider';
 import { LilyPondLanguageClient } from './languageClient';
 import { registerTaskProvider, registerEngraveOnSave } from './tasks';
+import { registerDiagnosticsCommand } from './diagnosticsCommand';
+import { log } from './log';
 
 let languageClient: LilyPondLanguageClient | undefined;
 
 export function activate(context: vscode.ExtensionContext): { LilyPondInstallation: typeof LilyPondInstallation } {
+	context.subscriptions.push(log);
+	log.info(`LilyPond Studio ${context.extension.packageJSON.version} activating on ${process.platform} ${process.arch}, VS Code ${vscode.version}`);
+	registerDiagnosticsCommand(context, () => languageClient);
+
 	// Register providers (they work without LilyPondInstallation, just with limited functionality)
 	const diagnosticsProvider = registerVersionDiagnostics(context);
 	const completionProvider = registerCompletionProvider(context);

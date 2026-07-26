@@ -6,6 +6,28 @@ declare function acquireVsCodeApi(): any;
 
 const vscode = acquireVsCodeApi();
 
+/** Reports a failure to the extension host, which logs it and offers it to the user.
+ *
+ * Registered before anything else runs so that a fault in this script's own setup — a missing asset, a CSP violation — still reaches the log rather than dying in a DevTools console nobody opens.
+ */
+function reportError(message: string, error?: unknown) {
+	const detail = error instanceof Error ? `${error.message}\n${error.stack ?? ''}` : error !== undefined ? String(error) : '';
+	vscode.postMessage({ type: 'error', message: detail ? `${message}: ${detail}` : message });
+}
+
+window.addEventListener('error', (event: ErrorEvent) => {
+	reportError(`Uncaught error at ${event.filename}:${event.lineno}`, event.error ?? event.message);
+});
+
+window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+	reportError('Unhandled promise rejection', event.reason);
+});
+
+/** Sends a line to the extension's log channel, where a user can copy it into a bug report. */
+function log(message: string) {
+	vscode.postMessage({ type: 'log', message });
+}
+
 // Read configuration from data attribute
 const configElement = document.getElementById('viewer-config');
 const config = JSON.parse(configElement?.dataset.config || '{}');
@@ -15,8 +37,7 @@ const loading = document.getElementById('loading')!;
 const zoomLevelDisplay = document.getElementById('zoom-level')!;
 const zoomControls = document.getElementById('zoom-controls')!;
 
-console.log('Webview loaded');
-console.log('PDF URL:', config.pdfUrl);
+log(`Webview loaded, PDF URL: ${config.pdfUrl}`);
 
 // Zoom state
 enum ZoomMode {
@@ -155,13 +176,9 @@ async function loadPdf() {
 		if (error instanceof RenderCancelledError) {
 			return; // Silently ignore cancellation
 		}
-		console.error('Error loading PDF:', error);
 		loading.textContent = 'Error loading PDF: ' + error.message;
-		loading.innerHTML += '<br><br>Check the DevTools Console (Help > Toggle Developer Tools) for details.';
-		vscode.postMessage({
-			type: 'error',
-			message: error.message + ' - ' + error.stack
-		});
+		loading.innerHTML += '<br><br>See the LilyPond Studio output channel (View &gt; Output) for details.';
+		reportError('Error loading PDF', error);
 	}
 }
 
