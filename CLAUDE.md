@@ -33,7 +33,7 @@ The extension has three distinct runtime environments:
 **Language server** (`server/ly-lsp.exe`, external Rust binary):
 - Managed by `src/languageClient.ts` via stdio LSP
 - Provides diagnostics, go-to-definition, find-references
-- Must be built from the `ly-lsp` repo (probably checked out as a sibling of this repo) and placed in `server/` manually
+- Lives in the `ly-lsp/` git submodule, which pins the server revision each extension commit ships with. Build it with `cargo build --release --manifest-path ly-lsp/Cargo.toml` and copy the binary into `server/` manually; CI does this itself for each platform it packages
 - To iterate on the language server locally, point `lilypondStudio.languageServerPath` to a local binary
 
 **PDF viewer webview** (`src/viewer/viewer.ts` → `dist/viewer.js`, ESM, browser):

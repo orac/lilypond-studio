@@ -1,12 +1,20 @@
 .claude/**
+.github/**
 .vscode/**
 .vscode-test/**
 out/**
 node_modules/**
 src/**
 tests/**
+# The language server's source tree, and its build directory in particular, must stay out of the package: only the one compiled binary that the release workflow copies into server/ belongs there.
+ly-lsp/**
 .gitignore
+.gitmodules
+.gitattributes
 .yarnrc
+.oxlintrc.json
+CLAUDE.md
+CONTRIBUTING.md
 esbuild.js
 vsc-extension-quickstart.md
 **/tsconfig.json

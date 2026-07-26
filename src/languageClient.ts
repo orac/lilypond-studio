@@ -9,8 +9,12 @@ import {
 } from 'vscode-languageclient/node';
 import { LilyPondInstallation } from './LilyPondInstallation';
 
-/** Location of the bundled ly-lsp binary, relative to the extension root. */
-const SERVER_RELATIVE_PATH = path.join('server', 'ly-lsp.exe');
+/**
+ * Location of the bundled ly-lsp binary, relative to the extension root.
+ *
+ * The extension ships as platform-specific packages, each carrying only the binary built for its own target, so this needs to name the binary for the platform we're running on rather than every platform we publish for.
+ */
+const SERVER_RELATIVE_PATH = path.join('server', process.platform === 'win32' ? 'ly-lsp.exe' : 'ly-lsp');
 
 /**
  * Manages the lifecycle of the ly-lsp language server.

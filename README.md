@@ -40,14 +40,14 @@ I made this because I've been using Frescobaldi for years, but I want the full p
 
 ## Building from source
 
-The extension's TypeScript is built with `npm run compile` (or `npm run watch` while developing). The bundled language server is a separate Rust crate, [ly-lsp](https://github.com/orac/ly-lsp), and is built manually:
+The extension's TypeScript is built with `npm run compile` (or `npm run watch` while developing). The bundled language server is a separate Rust crate, [ly-lsp](https://github.com/orac/ly-lsp), included here as a git submodule in `ly-lsp/` so that each extension commit pins the exact server revision it ships with. Clone with `--recurse-submodules`, or run `git submodule update --init` in an existing checkout. It's built manually:
 
-1. Build it in release mode: `cargo build --release` (run from the `ly-lsp` checkout). Building the tree-sitter grammar needs a C compiler — MSVC on Windows.
-2. Copy the resulting binary into this extension's `server/` directory, e.g. `target/release/ly-lsp.exe` → `server/ly-lsp.exe`.
+1. Build it in release mode: `cargo build --release --manifest-path ly-lsp/Cargo.toml`. Building the tree-sitter grammar needs a C compiler — MSVC on Windows.
+2. Copy the resulting binary into this extension's `server/` directory, e.g. `ly-lsp/target/release/ly-lsp.exe` → `server/ly-lsp.exe`.
 
-The extension looks for the binary at `server/ly-lsp.exe` and packages it into the `.vsix`. If it's missing, the language-server features are simply disabled — everything else still works. The bundled binary is host-platform-specific; only Windows is built for now.
+The extension looks for the binary at `server/ly-lsp.exe` on Windows and `server/ly-lsp` elsewhere, and packages it into the `.vsix`. If it's missing, the language-server features are simply disabled — everything else still works. Because the binary is native, releases are published as platform-specific packages (`win32-x64`, `linux-x64`, `darwin-x64`, `darwin-arm64`); VS Code installs whichever matches, so most users never see the distinction.
 
-While iterating on the server you can skip the copy step: set `lilypondStudio.languageServerPath` to your build output (e.g. `../ly-lsp/target/release/ly-lsp.exe`) and the extension will use that in preference to the bundled binary, restarting the server whenever the setting changes.
+While iterating on the server you can skip the copy step: set `lilypondStudio.languageServerPath` to your build output (e.g. `ly-lsp/target/release/ly-lsp.exe`) and the extension will use that in preference to the bundled binary, restarting the server whenever the setting changes.
 
 ## Known issues and limitations
 
