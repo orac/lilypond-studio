@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { PdfViewerPanel } from './pdfViewer';
+import { findPdfForSource } from './outputPaths';
 import { PdfCustomEditorProvider } from './pdfCustomEditor';
 import { LilyPondInstallation } from './LilyPondInstallation';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
@@ -136,10 +136,8 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 }
 
 async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: vscode.ExtensionContext) {
-	const filePath = editor.document.uri.fsPath;
-	const pdfPath = filePath.replace(/\.ly$/, '.pdf');
-
-	if (fs.existsSync(pdfPath)) {
+	const pdfPath = findPdfForSource(editor.document.uri);
+	if (pdfPath) {
 		await openPdfPreview(pdfPath, context, editor.document.uri);
 	}
 }

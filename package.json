@@ -82,10 +82,23 @@
           "default": [],
           "description": "Additional include directories for LilyPond. Each gets appended to the search paths when you use \\include in a file. On Windows, ensure you include the trailing slash."
         },
+        "lilypondStudio.commandOptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Further command-line options passed to LilyPond, after the ones the build task generates and before the filename (e.g. `-dpaper-size=a3`). `${workspaceFolder}` and `${fileDirname}` are substituted. Individual tasks in `tasks.json` can override this with their own `commandOptions`."
+        },
         "lilypondStudio.languageServerPath": {
           "type": "string",
           "default": "",
           "description": "Path to the ly-lsp language server executable. Leave empty to use the binary bundled with the extension. Set this to point at a locally-built server (e.g. ../ly-lsp/target/release/ly-lsp.exe) during development."
+        },
+        "lilypondStudio.outputDirectory": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Directory LilyPond writes engraved output to, passed as `--output`. Relative paths are resolved against the directory containing the `.ly` file, and `${workspaceFolder}` and `${fileDirname}` are substituted. The directory is created if it does not exist. Leave empty to write the PDF alongside the source file. Individual tasks in `tasks.json` can override this with their own `outputDirectory`."
         },
         "lilypondStudio.engraveOnSave": {
           "type": "boolean",
@@ -121,6 +134,24 @@
               "publish"
             ],
             "description": "Build mode: preview (with point-and-click) or publish (without point-and-click)"
+          },
+          "outputDirectory": {
+            "type": "string",
+            "description": "Directory to write output to, passed to lilypond as --output. Relative paths are resolved against the directory containing the .ly file; ${workspaceFolder} and ${fileDirname} are substituted. Created if it does not exist. Overrides the lilypondStudio.outputDirectory setting."
+          },
+          "includeDirs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Directories to search for \\include, each passed to lilypond as --include. Overrides the lilypondStudio.includeDirs setting."
+          },
+          "commandOptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Further command-line options passed to lilypond, after the ones the task generates and before the filename. Overrides the lilypondStudio.commandOptions setting."
           }
         }
       }
