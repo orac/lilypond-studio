@@ -6,3 +6,4 @@ server/
 *.vsix
 .claude/*.local.json
 .claude/.state/
+target/rust-analyzer/flycheck0/

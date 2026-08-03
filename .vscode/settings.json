@@ -10,5 +10,6 @@
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "js/ts.tsc.autoDetect": "off",
-    "js/ts.tsdk.path": "node_modules\\typescript\\lib"
+    "js/ts.tsdk.path": "node_modules\\typescript\\lib",
+    "rust-analyzer.linkedProjects": ["ly-lsp/Cargo.toml"],
 }
