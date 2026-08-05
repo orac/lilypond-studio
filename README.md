@@ -79,6 +79,8 @@ If you turn off PDF output or change the output directory here instead of with `
 - The PDF preview looks for `<name>.pdf` in your configured output directories and next to the source file, so a score renamed with `\bookOutputName` won't be found automatically. There's no support for more complex workflows with book mode and multiple output files.
 - No MIDI input/output or previewing MIDI files.
 - You can use snippets if you like, but the extension doesn't ship with any. If you find some useful, please let me know and I'll include them!
+- It doesn't understand context names (like `Voice` or `GrandStaff`).
+- It doesn't understand drum mode or figured bass.
 
 # Developers
 ## Building from source

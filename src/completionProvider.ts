@@ -1,12 +1,23 @@
 import * as vscode from 'vscode';
 import { LilyPondInstallation } from './LilyPondInstallation';
+import { LilyPondLanguageClient } from './languageClient';
 import { log } from './log';
 
 /**
- * Provides autocomplete suggestions for LilyPond commands
+ * Provides autocomplete suggestions for LilyPond commands.
+ *
+ * Two sources feed this: the server's argument completions (narrow but
+ * precise — only offered inside a closed-set command argument, e.g. `\repeat |`)
+ * and the client-side keyword list loaded from `lilypond-words` (broad but
+ * untargeted). Showing both together would bury the useful, targeted result in
+ * the entire keyword list, so whenever the server has something to offer, its
+ * result is shown alone; the keyword list is only a fallback for positions the
+ * server has nothing to say about.
  */
 export class LilyPondCompletionProvider implements vscode.CompletionItemProvider {
 	private completionItems: vscode.CompletionItem[] = [];
+
+	constructor(private readonly languageClient: LilyPondLanguageClient) {}
 
 	/**
 	 * Loads completions from the lilypond-words file.
@@ -77,14 +88,20 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 	}
 
 	/**
-	 * Provides completion items
+	 * Provides completion items: the server's argument completions alone when it
+	 * has any, otherwise the keyword-list fallback.
 	 */
-	public provideCompletionItems(
+	public async provideCompletionItems(
 		document: vscode.TextDocument,
 		position: vscode.Position,
 		token: vscode.CancellationToken,
-		context: vscode.CompletionContext
-	): vscode.CompletionItem[] {
+		_context: vscode.CompletionContext
+	): Promise<vscode.CompletionItem[]> {
+		const serverItems = await this.languageClient.requestCompletions(document, position, token);
+		if (serverItems.length > 0) {
+			return serverItems;
+		}
+
 		// Determine the range to replace
 		const lineText = document.lineAt(position.line).text;
 
@@ -121,8 +138,11 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 /**
  * Registers the LilyPond completion provider
  */
-export function registerCompletionProvider(context: vscode.ExtensionContext): LilyPondCompletionProvider {
-	const provider = new LilyPondCompletionProvider();
+export function registerCompletionProvider(
+	context: vscode.ExtensionContext,
+	languageClient: LilyPondLanguageClient
+): LilyPondCompletionProvider {
+	const provider = new LilyPondCompletionProvider(languageClient);
 
 	const completionProvider = vscode.languages.registerCompletionItemProvider(
 		{ language: 'lilypond' },

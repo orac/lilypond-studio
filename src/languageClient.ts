@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import {
+	CompletionRequest,
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
@@ -125,6 +126,19 @@ export class LilyPondLanguageClient {
 			documentSelector: [{ language: 'lilypond' }],
 			// A thunk, so restart() re-reads the words path and include dirs.
 			initializationOptions: () => this.computeInitializationOptions(),
+			middleware: {
+				// LilyPondCompletionProvider (completionProvider.ts) already queries
+				// the server directly via requestCompletions() below, and decides
+				// whether to show its results alone or fall back to the keyword
+				// list. If vscode-languageclient's own auto-registered completion
+				// provider were also live, VS Code would merge its results with the
+				// extension's — showing the keyword list and the server's narrower
+				// argument completions together, which is exactly what we're
+				// avoiding. Suppressing it here leaves the server's declared
+				// completion_provider capability harmless: requestCompletions()
+				// still reaches it via a raw request.
+				provideCompletionItem: () => undefined,
+			},
 		};
 
 		const client = new LanguageClient(
@@ -147,6 +161,36 @@ export class LilyPondLanguageClient {
 		if (client) {
 			await client.dispose();
 		}
+	}
+
+	/**
+	 * Requests completions from the server for `position` in `document`, bypassing
+	 * the suppressed automatic completion feature (see the `middleware` above) so
+	 * the caller can decide how to combine the result with its own completions.
+	 *
+	 * Returns an empty array both when the client isn't running yet and when the
+	 * server has nothing to offer at this position (the common case — most
+	 * cursor positions aren't inside a closed-set command argument; see
+	 * `ly-lsp/src/command_assist.rs`'s `completions()`) — callers don't need to
+	 * tell those two "nothing here" cases apart.
+	 */
+	public async requestCompletions(
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		token: vscode.CancellationToken,
+	): Promise<vscode.CompletionItem[]> {
+		if (!this.client?.isRunning()) {
+			return [];
+		}
+
+		const params = this.client.code2ProtocolConverter.asTextDocumentPositionParams(document, position);
+		const response = await this.client.sendRequest(CompletionRequest.type, params, token);
+		const result = await this.client.protocol2CodeConverter.asCompletionResult(response);
+		if (!result) {
+			return [];
+		}
+
+		return Array.isArray(result) ? result : result.items;
 	}
 
 	/**

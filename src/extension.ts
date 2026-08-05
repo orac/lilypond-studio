@@ -20,8 +20,8 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 
 	// Register providers (they work without LilyPondInstallation, just with limited functionality)
 	const diagnosticsProvider = registerVersionDiagnostics(context);
-	const completionProvider = registerCompletionProvider(context);
 	languageClient = new LilyPondLanguageClient(context);
+	const completionProvider = registerCompletionProvider(context, languageClient);
 
 	// Brings the language server up when a .ly file is open. On a successful
 	// detection, onDidBecomeReady starts it with the words path in hand, so we
