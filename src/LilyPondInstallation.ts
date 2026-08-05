@@ -43,6 +43,16 @@ export function parseFileVersion(document: vscode.TextDocument): string | null {
 type CommandRunner = (command: string, args: string[]) => Promise<string>;
 
 /**
+ * The LilyPond executable path from configuration, falling back to a bare `lilypond` to be looked up on PATH.
+ *
+ * Readable without a detected installation, so it's also the way to reach the setting before (or without) detection.
+ */
+export function getConfiguredExecutablePath(): string {
+	const config = vscode.workspace.getConfiguration('lilypondStudio');
+	return config.get<string>('executablePath') || 'lilypond';
+}
+
+/**
  * Manages LilyPond installation detection and tracking.
  *
  * Uses lazy initialization - the instance is not created until the first .ly file is opened.
@@ -222,8 +232,7 @@ export class LilyPondInstallation {
 	 * Gets the LilyPond executable path from configuration
 	 */
 	public getExecutablePath(): string {
-		const config = vscode.workspace.getConfiguration('lilypondStudio');
-		return config.get<string>('executablePath') || 'lilypond';
+		return getConfiguredExecutablePath();
 	}
 
 	/**
