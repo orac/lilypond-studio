@@ -122,7 +122,7 @@
       "patterns": [
         {
           "name": "support.function.lilypond",
-          "match": "\\\\[a-zA-Z]+\\b"
+          "match": "\\\\[a-zA-Z_'-]+\\b"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "patterns": [
         {
           "name": "variable.other.declaration.lilypond",
-          "match": "\\b([a-zA-Z_][a-zA-Z0-9_'`-]*)\\s*=\\s*"
+          "match": "\\b([a-zA-Z_][a-zA-Z_'`-]*)\\s*=\\s*"
         }
       ]
     },
