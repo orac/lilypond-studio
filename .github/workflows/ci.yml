@@ -9,12 +9,17 @@ on:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
+    name: Test (${{ matrix.os }}, LilyPond ${{ matrix.lilypond }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        # Every version we support gets its own run, because what the tests read out of an installation changes between versions. Add one here to start testing against it.
+        lilypond: ['2.24.3']
+    env:
+      # Relative to the workspace, so the same value works in bash, in Node and on every runner without any path conversion.
+      LILYPOND_TEST_INSTALL_DIR: .lilypond-installs
     steps:
       # No submodule here: type-checking, linting and the tests don't need the language server, which tolerates a missing binary. Skipping it keeps this job off the Rust toolchain entirely.
       - uses: actions/checkout@v5
@@ -25,6 +30,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # The tests read files out of a real installation rather than copies checked into the repository, so CI has to supply one.
+      - name: Install LilyPond ${{ matrix.lilypond }}
+        shell: bash
+        run: bash scripts/install-lilypond.sh '${{ matrix.lilypond }}' > /dev/null
 
       - name: Type-check and lint
         run: npm run check-types && npm run lint

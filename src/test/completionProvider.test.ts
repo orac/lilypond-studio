@@ -1,6 +1,7 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
-import * as path from 'path';
+import { requireInstalls, wordsFilePath } from './lilypondInstalls';
 
 // We need to use the extension's bundled LilyPondInstallation class, not import it directly.
 // The extension bundles its own copy, so direct imports would be a different class instance.
@@ -12,219 +13,171 @@ type LilyPondInstallationType = {
 	invalidate(): void;
 };
 
-suite('Completion Provider', () => {
-	// Path to our test fixtures
-	// __dirname is out/test when compiled, so go up to project root
-	const projectRoot = path.join(__dirname, '..', '..');
-	const fixturesPath = path.join(projectRoot, 'src', 'test', 'fixtures');
-	const mockLilypondPath = path.join(fixturesPath, 'bin', 'lilypond.exe');
+/**
+ * Opens a scratch document with the given content and returns the completions offered at its end.
+ *
+ * The document is untitled, so nothing is written to disk and each case starts from a clean buffer.
+ */
+async function completionsAtEndOf(content: string): Promise<vscode.CompletionList> {
+	const document = await vscode.workspace.openTextDocument({ language: 'lilypond', content });
+	await vscode.window.showTextDocument(document);
 
-	// Reference to the extension's LilyPondInstallation class
-	let LilyPondInstallation: LilyPondInstallationType;
+	const position = new vscode.Position(0, content.length);
+	const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
+		'vscode.executeCompletionItemProvider',
+		document.uri,
+		position
+	);
 
-	/**
-	 * Helper to create a scratch document with the given content
-	 */
-	async function createScratchDocument(content: string): Promise<vscode.TextDocument> {
-		const document = await vscode.workspace.openTextDocument({
-			language: 'lilypond',
-			content: content
-		});
-		await vscode.window.showTextDocument(document);
-		return document;
-	}
+	assert.ok(completions, 'Completions should be provided');
+	return completions;
+}
 
-	suiteSetup(async () => {
-		// Get the extension first (need it to access the bundled LilyPondInstallation)
-		const allExtensions = vscode.extensions.all;
-		const ext = allExtensions.find(e => e.id.includes('lilypond-studio'));
-		if (!ext) {
-			const ids = allExtensions.map(e => e.id).join(', ');
-			throw new Error(`Extension not found. Available: ${ids}`);
-		}
+function labelsOf(completions: vscode.CompletionList): string[] {
+	return completions.items.map(item => (typeof item.label === 'string' ? item.label : item.label.label));
+}
 
-		// Activate extension to get exports
-		if (!ext.isActive) {
-			await ext.activate();
-		}
+// The completions come from the installation's own lilypond-words, so every installed version is worth a run: a command that moved or was renamed between versions shows up as a failure against that version alone.
+for (const install of requireInstalls()) {
+	suite(`Completion Provider (LilyPond ${install.version})`, () => {
+		let LilyPondInstallation: LilyPondInstallationType;
 
-		// Get the bundled LilyPondInstallation from extension exports
-		LilyPondInstallation = ext.exports.LilyPondInstallation;
+		suiteSetup(async () => {
+			// Get the extension first (need it to access the bundled LilyPondInstallation)
+			const allExtensions = vscode.extensions.all;
+			const ext = allExtensions.find(e => e.id.includes('lilypond-studio'));
+			if (!ext) {
+				const ids = allExtensions.map(e => e.id).join(', ');
+				throw new Error(`Extension not found. Available: ${ids}`);
+			}
 
-		// Set up mock instance using the extension's class
-		const mockInstallation = LilyPondInstallation.createMockInstance({
-			version: '2.24.0',
-			executablePath: mockLilypondPath
-		});
+			// Activate extension to get exports
+			if (!ext.isActive) {
+				await ext.activate();
+			}
 
-		// Fire the ready event to trigger completion loading
-		LilyPondInstallation.setMockInstance(mockInstallation);
+			// Get the bundled LilyPondInstallation from extension exports
+			LilyPondInstallation = ext.exports.LilyPondInstallation;
 
-		// Now open a scratch document
-		const document = await createScratchDocument('\\version "2.24.0"');
-		await vscode.window.showTextDocument(document);
+			// Point the extension at the real installation without running it, so the completions are loaded from that version's lilypond-words.
+			const mockInstallation = LilyPondInstallation.createMockInstance({
+				version: install.version,
+				executablePath: install.executablePath,
+			});
 
-		// Wait for the async ready event handlers to complete
-		await new Promise(resolve => setTimeout(resolve, 500));
+			// Setting the mock fires the ready event, which triggers completion loading
+			LilyPondInstallation.setMockInstance(mockInstallation);
 
-		// Verify the mock is properly set
-		const instance = LilyPondInstallation.getInstance();
-		if (!instance) {
-			throw new Error('Mock instance not set properly');
-		}
-		if (instance.getVersion() !== '2.24.0') {
-			throw new Error(`Expected version 2.24.0, got ${instance.getVersion()}`);
-		}
-	});
+			const document = await vscode.workspace.openTextDocument({
+				language: 'lilypond',
+				content: `\\version "${install.version}"`,
+			});
+			await vscode.window.showTextDocument(document);
 
-	suiteTeardown(async () => {
-		// Close any open editors first
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+			// Wait for the async ready event handlers to complete
+			await new Promise(resolve => setTimeout(resolve, 500));
 
-		// Reset LilyPondInstallation
-		if (LilyPondInstallation) {
-			LilyPondInstallation.resetForTesting();
-		}
-	});
-
-	test('provides completions for backslash commands', async () => {
-		const document = await createScratchDocument('\\');
-
-		// Trigger completion at the end of the backslash
-		const position = new vscode.Position(0, 1);
-		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-			'vscode.executeCompletionItemProvider',
-			document.uri,
-			position
-		);
-
-		assert.ok(completions, 'Completions should be provided');
-		assert.ok(completions.items.length > 0, 'Should have at least one completion item');
-
-		// Check that some expected LilyPond commands are present
-		const labels = completions.items.map(item =>
-			typeof item.label === 'string' ? item.label : item.label.label
-		);
-
-		// These should exist from our mock lilypond-words file
-		const hasBackslashCommands = labels.some(label => label.startsWith('\\'));
-		assert.ok(hasBackslashCommands, 'Should have backslash commands in completions');
-	});
-
-	test('provides completions when typing partial command', async () => {
-		const document = await createScratchDocument('\\rel');
-
-		// Trigger completion at the end
-		const position = new vscode.Position(0, 4);
-		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-			'vscode.executeCompletionItemProvider',
-			document.uri,
-			position
-		);
-
-		assert.ok(completions, 'Completions should be provided');
-		assert.ok(completions.items.length > 0, 'Should have completion items');
-
-		const labels = completions.items.map(item =>
-			typeof item.label === 'string' ? item.label : item.label.label
-		);
-
-		// \relative should be in the completions from our mock file
-		assert.ok(
-			labels.some(label => label === '\\relative'),
-			'Should include \\relative in completions'
-		);
-	});
-
-	test('version completion includes version number snippet', async () => {
-		const document = await createScratchDocument('\\ver');
-
-		// Trigger completion
-		const position = new vscode.Position(0, 4);
-		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-			'vscode.executeCompletionItemProvider',
-			document.uri,
-			position
-		);
-
-		assert.ok(completions, 'Completions should be provided');
-
-		// Find the \version completion
-		const versionCompletion = completions.items.find(item => {
-			const label = typeof item.label === 'string' ? item.label : item.label.label;
-			return label === '\\version';
+			// Verify the mock is properly set
+			const instance = LilyPondInstallation.getInstance();
+			if (!instance) {
+				throw new Error('Mock instance not set properly');
+			}
+			if (instance.getVersion() !== install.version) {
+				throw new Error(`Expected version ${install.version}, got ${instance.getVersion()}`);
+			}
 		});
 
-		assert.ok(versionCompletion, 'Should have \\version completion');
+		suiteTeardown(async () => {
+			// Close any open editors first
+			await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 
-		// Check that it's a snippet type
-		assert.strictEqual(
-			versionCompletion!.kind,
-			vscode.CompletionItemKind.Snippet,
-			'\\version should be a Snippet kind'
-		);
-
-		// Check that it has the special detail
-		assert.strictEqual(
-			versionCompletion!.detail,
-			'LilyPond version directive',
-			'\\version should have special detail text'
-		);
-	});
-
-	test('completions include non-backslash words', async () => {
-		const document = await createScratchDocument('maj');
-
-		// Trigger completion at the end
-		const position = new vscode.Position(0, 3);
-		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-			'vscode.executeCompletionItemProvider',
-			document.uri,
-			position
-		);
-
-		assert.ok(completions, 'Completions should be provided');
-
-		const labels = completions.items.map(item =>
-			typeof item.label === 'string' ? item.label : item.label.label
-		);
-
-		// 'major' should be in the completions from our mock file
-		assert.ok(
-			labels.some(label => label === 'major'),
-			'Should include "major" in completions'
-		);
-	});
-
-	test('completion replaces correct range with backslash', async () => {
-		const document = await createScratchDocument('c4 \\rel');
-
-		// Trigger completion at the end
-		const position = new vscode.Position(0, 7);
-		const completions = await vscode.commands.executeCommand<vscode.CompletionList>(
-			'vscode.executeCompletionItemProvider',
-			document.uri,
-			position
-		);
-
-		assert.ok(completions, 'Completions should be provided');
-		assert.ok(completions.items.length > 0, 'Should have completion items');
-
-		// Find \relative completion and check its range
-		const relativeCompletion = completions.items.find(item => {
-			const label = typeof item.label === 'string' ? item.label : item.label.label;
-			return label === '\\relative';
+			// Reset LilyPondInstallation, so the next version's suite starts from a clean slate
+			if (LilyPondInstallation) {
+				LilyPondInstallation.resetForTesting();
+			}
 		});
 
-		assert.ok(relativeCompletion, 'Should have \\relative completion');
+		test('reads its word list from the installation', () => {
+			assert.ok(fs.existsSync(wordsFilePath(install)), `Expected a lilypond-words file at ${wordsFilePath(install)}`);
+		});
 
-		// The range should cover '\rel' (positions 3-7)
-		// VSCode returns range as a Range object but it may be serialized differently
-		if (relativeCompletion!.range) {
-			const range = relativeCompletion!.range as vscode.Range;
-			// Range should include the backslash at position 3
-			assert.strictEqual(range.start.character, 3, `Range should start at backslash, got ${range.start.character}`);
-			assert.strictEqual(range.end.character, 7, `Range should end at cursor, got ${range.end.character}`);
-		}
+		test('provides completions for backslash commands', async () => {
+			const completions = await completionsAtEndOf('\\');
+
+			assert.ok(completions.items.length > 0, 'Should have at least one completion item');
+			assert.ok(
+				labelsOf(completions).some(label => label.startsWith('\\')),
+				'Should have backslash commands in completions'
+			);
+		});
+
+		test('provides completions when typing partial command', async () => {
+			const completions = await completionsAtEndOf('\\rel');
+
+			assert.ok(completions.items.length > 0, 'Should have completion items');
+			assert.ok(
+				labelsOf(completions).includes('\\relative'),
+				'Should include \\relative in completions'
+			);
+		});
+
+		test('version completion includes version number snippet', async () => {
+			const completions = await completionsAtEndOf('\\ver');
+
+			const versionCompletion = completions.items.find(item => {
+				const label = typeof item.label === 'string' ? item.label : item.label.label;
+				return label === '\\version';
+			});
+
+			assert.ok(versionCompletion, 'Should have \\version completion');
+
+			assert.strictEqual(
+				versionCompletion!.kind,
+				vscode.CompletionItemKind.Snippet,
+				'\\version should be a Snippet kind'
+			);
+
+			assert.strictEqual(
+				versionCompletion!.detail,
+				'LilyPond version directive',
+				'\\version should have special detail text'
+			);
+
+			// The snippet offers the installed version as its default, so it tracks whichever installation the extension found.
+			const insertText = versionCompletion!.insertText as vscode.SnippetString;
+			assert.ok(
+				insertText.value.includes(install.version),
+				`Snippet ${insertText.value} should default to ${install.version}`
+			);
+		});
+
+		test('completions include non-backslash words', async () => {
+			// Context names are the bulk of the word list's unprefixed entries, and Staff has been one since long before any version we support.
+			const completions = await completionsAtEndOf('Sta');
+
+			assert.ok(labelsOf(completions).includes('Staff'), 'Should include "Staff" in completions');
+		});
+
+		test('completion replaces correct range with backslash', async () => {
+			const completions = await completionsAtEndOf('c4 \\rel');
+
+			assert.ok(completions.items.length > 0, 'Should have completion items');
+
+			const relativeCompletion = completions.items.find(item => {
+				const label = typeof item.label === 'string' ? item.label : item.label.label;
+				return label === '\\relative';
+			});
+
+			assert.ok(relativeCompletion, 'Should have \\relative completion');
+
+			// The range should cover '\rel' (positions 3-7)
+			// VSCode returns range as a Range object but it may be serialized differently
+			if (relativeCompletion!.range) {
+				const range = relativeCompletion!.range as vscode.Range;
+				// Range should include the backslash at position 3
+				assert.strictEqual(range.start.character, 3, `Range should start at backslash, got ${range.start.character}`);
+				assert.strictEqual(range.end.character, 7, `Range should end at cursor, got ${range.end.character}`);
+			}
+		});
 	});
-});
+}

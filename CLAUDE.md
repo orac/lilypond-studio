@@ -64,6 +64,8 @@ The build is orchestrated by `esbuild.js`, which bundles both targets; it accept
 - Grammar tests use `vscode-tmgrammar-snap` snapshots under `tests/grammar/snapshots/`; update them with `test:grammar:update` after intentional grammar changes
 - Integration tests compile to `out/test/` and run under `@vscode/test-electron`
 - The pretest hook builds both tests and the extension
+- Tests that depend on what LilyPond ships read a real installation, found by `src/test/lilypondInstalls.ts`, and run once per version found. `TESTING.md` describes the whole system: where installations are looked for, the `LILYPOND_TEST_INSTALL_DIR` override, `scripts/install-lilypond.sh`, and the CI matrix
+- Add tests for designed, expected behaviour, not for temporary behaviour or accepted limitations. Don't add a test that will start to fail when a bug or caveat is fixed.
 
 ## Linting
 

@@ -7,3 +7,4 @@ server/
 .claude/*.local.json
 .claude/.state/
 target/rust-analyzer/flycheck0/
+.lilypond-installs/
