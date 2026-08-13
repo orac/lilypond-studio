@@ -2,13 +2,12 @@
 name: write-ts
 description: Use this skill every time you edit or write TypeScript code.
 ---
-Write readable, maintainable TypeScript code making best use of the type system. Run `npm lint -- --fix` when you're done, and fix any warnings that could not be fixed automatically. Follow the "Boy Scout" rule by leaving the code cleaner than you found it. Proactively refactor duplicate/repetitive code, and split large files into smaller modules. Write unit tests for all non-trivial functions and components.
+Write readable, maintainable TypeScript code making best use of the type system. Run `npm lint -- --fix` when you're done, and fix any warnings that could not be fixed automatically. Follow the "Boy Scout" rule by leaving the code cleaner than you found it. Proactively refactor duplicate/repetitive code, and split large files into smaller modules. Follow these style rules even if you see older code that doesn't. If you're editing code that breaks these rules, fix it as part of your change.
 
 ## Code style
 - No line length limit. Wrap lines only to express structure: long argument lists, object/array literals, and between statements.
 - Spaces for indentation, never for alignment. No ASCII art, tables, or aligned `=` signs.
 - No banner comments to separate sections. Use `describe` blocks in tests, separate functions/classes/files instead.
-- Use semicolons.
 - Trailing commas in multi-line arrays and objects.
 - No `_` prefix/suffix on private members.
 - Always use braces with `if`, `for`, `while`.
@@ -28,7 +27,7 @@ Write readable, maintainable TypeScript code making best use of the type system.
 
 ## Comments / JSDoc
 - Brief JSDoc on all public/exported symbols.
-- First line of a multi-line JSDoc is a one-line summary, then a blank line.
+- First line of a multi-line JSDoc (the line with the `/**`) is a one-line summary, then a blank line.
 - Top-level class or function: explain what it is for and how it fits into the system.
 - Don't restate what the name and type already say; don't duplicate TypeScript types into comments.
 - No line length limit. Use a blank line to wrap long prose into paragraphs. Don't wrap mid-sentence.
@@ -36,3 +35,4 @@ Write readable, maintainable TypeScript code making best use of the type system.
 - Don't describe the algorithm step-by-step. If you need to document the internals of a function, use regular comments inside the function.
 - Use `@param` to document parameters only when the name/type doesn't fully express meaning (units, null semantics, defaults). Don't repeat the type.
 - Describe interface members in comments on the member itself, not on the interface.
+- Don't describe temporary details like what step of the plan you are working on, or what a symbol used to do before your change. That's not relevant to future readers.

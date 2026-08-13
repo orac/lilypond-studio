@@ -10,7 +10,7 @@ npm run test:grammar:update  # regenerate the grammar snapshots after an intenti
 
 ## Tests need a real LilyPond installation
 
-Much of what the extension knows comes out of the LilyPond installation it finds — the word list under `share/lilypond/<version>/vim/syntax/lilypond-words` today, and more of the installation's data files as the language server grows. Those files change from version to version, so the tests read them from a real installation rather than from copies checked into this repository. **A test run with no LilyPond installed fails**. Test results when you run locally depend on what version(s)so you have installed.
+Much of what the extension knows comes out of the LilyPond installation it finds. Those files change from version to version, so the tests read them from a real installation rather than from copies checked into this repository. **A test run with no LilyPond installed fails**. Test results when you run locally depend on what version(s)so you have installed.
 
 `src/test/lilypondInstalls.ts` does the finding. `requireInstalls()` returns every installation it can see, oldest first, at most one per version, and a suite that depends on a version wraps itself in a loop over them:
 
