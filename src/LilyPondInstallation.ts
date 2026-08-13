@@ -293,32 +293,34 @@ export class LilyPondInstallation {
 	}
 
 	/**
-	 * Determines the path to the lilypond-words file.
-	 *
-	 * Used both to load completions and to tell the language server where the
-	 * built-in command list lives. Returns null if the installation hasn't been
-	 * detected yet.
+	 * Determines the path to LilyPond's version-specific share directory —
+	 * the one holding `ly/`, `vim/syntax/`, and the rest of the files this
+	 * version ships. Passed to the language server as-is, which joins onto it
+	 * itself, rather than a specific file within it: that way the server
+	 * needs no knowledge of this directory's layout to find its way back to
+	 * its root. Returns null if the installation hasn't been detected yet.
 	 */
-	public getWordsFilePath(): string | null {
+	public getShareDir(): string | null {
 		if (!this.lilypondVersion || !this.lilypondPath) {
 			return null;
 		}
 
 		// LilyPond executable is typically at: <install-dir>/bin/lilypond.exe
-		// Words file is at: <install-dir>/share/lilypond/<version>/vim/syntax/lilypond-words
+		// Share dir is at: <install-dir>/share/lilypond/<version>
 		const binDir = path.dirname(this.lilypondPath);
 		const installDir = path.dirname(binDir);
-		const wordsFilePath = path.join(
-			installDir,
-			'share',
-			'lilypond',
-			this.lilypondVersion,
-			'vim',
-			'syntax',
-			'lilypond-words'
-		);
+		return path.join(installDir, 'share', 'lilypond', this.lilypondVersion);
+	}
 
-		return wordsFilePath;
+	/**
+	 * Determines the path to the lilypond-words file.
+	 *
+	 * Used to load completions client-side. Returns null if the installation
+	 * hasn't been detected yet.
+	 */
+	public getWordsFilePath(): string | null {
+		const shareDir = this.getShareDir();
+		return shareDir ? path.join(shareDir, 'vim', 'syntax', 'lilypond-words') : null;
 	}
 
 	/**

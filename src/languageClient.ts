@@ -209,9 +209,9 @@ export class LilyPondLanguageClient {
 	private computeInitializationOptions(): Record<string, unknown> {
 		const options: Record<string, unknown> = {};
 
-		const wordsPath = LilyPondInstallation.getInstance()?.getWordsFilePath();
-		if (wordsPath) {
-			options.lilypondWordsPath = wordsPath;
+		const shareDir = LilyPondInstallation.getInstance()?.getShareDir();
+		if (shareDir) {
+			options.lilypondShareDir = shareDir;
 		}
 
 		options.includePaths =
