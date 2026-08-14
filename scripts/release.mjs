@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Cuts a release: bumps the extension and language server versions together, commits both repos, and tags the tag CI watches for.
+// Cuts a release: bumps the extension version, commits, and tags the tag CI watches for.
 // Usage: npm run release -- <major|minor|patch|x.y.z> [--push] [--dry-run]
 
 import { execFileSync } from "node:child_process";
@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const submodule = path.join(repoRoot, "ly-lsp");
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -68,18 +67,16 @@ if (!bump) {
 }
 
 // A release built from a dirty or diverged tree isn't reproducible from the tag, so refuse before touching anything.
-for (const [name, cwd] of [["lilypond-studio", repoRoot], ["ly-lsp", submodule]]) {
-	if (git(cwd, "status", "--porcelain")) {
-		die(`${name} has uncommitted changes; commit or stash them first`);
-	}
-	const branch = git(cwd, "rev-parse", "--abbrev-ref", "HEAD");
-	if (branch !== "main") {
-		die(`${name} is on ${branch === "HEAD" ? "a detached HEAD" : branch}, not main (try: git -C ${cwd} checkout main)`);
-	}
-	git(cwd, "fetch", "origin", "main");
-	if (git(cwd, "rev-list", "--count", "HEAD..origin/main") !== "0") {
-		die(`${name} is behind origin/main; pull first`);
-	}
+if (git(repoRoot, "status", "--porcelain")) {
+	die("lilypond-studio has uncommitted changes; commit or stash them first");
+}
+const branch = git(repoRoot, "rev-parse", "--abbrev-ref", "HEAD");
+if (branch !== "main") {
+	die(`lilypond-studio is on ${branch === "HEAD" ? "a detached HEAD" : branch}, not main`);
+}
+git(repoRoot, "fetch", "origin", "main");
+if (git(repoRoot, "rev-list", "--count", "HEAD..origin/main") !== "0") {
+	die("lilypond-studio is behind origin/main; pull first");
 }
 
 const manifestPath = path.join(repoRoot, "package.json");
@@ -93,34 +90,15 @@ if (git(repoRoot, "tag", "--list", tag)) {
 
 console.log(`Releasing ${current} -> ${version}`);
 
-// The language server's version tracks the extension's, so the binary in a VSIX can be traced back to a tag.
-console.log(`Bumping ly-lsp/Cargo.toml`);
-const cargoPath = path.join(submodule, "Cargo.toml");
-const cargo = readFileSync(cargoPath, "utf8");
-const bumped = cargo.replace(/^version = ".*"$/m, `version = "${version}"`);
-if (bumped === cargo) {
-	die("could not find a version line in ly-lsp/Cargo.toml");
-}
-if (!dryRun) {
-	writeFileSync(cargoPath, bumped);
-}
-// CI builds --locked, so a Cargo.lock still naming the old version would fail the release build.
-run(submodule, "cargo", "update", "--offline", "--package", "ly-lsp");
-run(submodule, "git", "commit", "-am", `Release ${version}`);
-
 console.log("Bumping package.json");
 setJsonVersion(manifestPath, version);
 setJsonVersion(path.join(repoRoot, "package-lock.json"), version);
-// One commit carries the manifest bump and the submodule pointer, so the tag names a complete, buildable tree.
-run(repoRoot, "git", "commit", "-m", `Release ${version}`, "--", "package.json", "package-lock.json", "ly-lsp");
+run(repoRoot, "git", "commit", "-m", `Release ${version}`, "--", "package.json", "package-lock.json");
 run(repoRoot, "git", "tag", "-a", tag, "-m", `Release ${version}`);
 
 if (push) {
-	// ly-lsp first: CI checks out the submodule from its remote, so the pointer must resolve before the tag arrives.
-	run(submodule, "git", "push", "origin", "main");
 	run(repoRoot, "git", "push", "origin", "main", tag);
 } else {
-	console.log(`\nCommitted and tagged ${tag}. To release, push ly-lsp first so CI can resolve the submodule:`);
-	console.log("  git -C ly-lsp push origin main");
+	console.log(`\nCommitted and tagged ${tag}. To release:`);
 	console.log(`  git push origin main ${tag}`);
 }
