@@ -84,6 +84,18 @@ export class LilyPondLanguageClient {
 		});
 	}
 
+	/**
+	 * Whether the server is up and answering requests.
+	 *
+	 * Asked by anything that duplicates something the server does better, so it
+	 * can stand down: the keyword-list completions in `completionProvider.ts`
+	 * are the server's whole vocabulary with none of its knowledge of scope,
+	 * origin or signature.
+	 */
+	public isRunning(): boolean {
+		return this.client?.isRunning() ?? false;
+	}
+
 	/** Stops the client. Call when the extension deactivates. */
 	public dispose(): Promise<void> {
 		return this.enqueue(() => this.doStop());
@@ -132,9 +144,8 @@ export class LilyPondLanguageClient {
 				// whether to show its results alone or fall back to the keyword
 				// list. If vscode-languageclient's own auto-registered completion
 				// provider were also live, VS Code would merge its results with the
-				// extension's — showing the keyword list and the server's narrower
-				// argument completions together, which is exactly what we're
-				// avoiding. Suppressing it here leaves the server's declared
+				// extension's, showing everything the server offers twice.
+				// Suppressing it here leaves the server's declared
 				// completion_provider capability harmless: requestCompletions()
 				// still reaches it via a raw request.
 				provideCompletionItem: () => undefined,

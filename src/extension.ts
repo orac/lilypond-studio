@@ -14,7 +14,7 @@ import { log } from './log';
 
 let languageClient: LilyPondLanguageClient | undefined;
 
-export function activate(context: vscode.ExtensionContext): { LilyPondInstallation: typeof LilyPondInstallation } {
+export function activate(context: vscode.ExtensionContext): { LilyPondInstallation: typeof LilyPondInstallation; languageClient: LilyPondLanguageClient } {
 	context.subscriptions.push(log);
 	log.info(`LilyPond Studio ${context.extension.packageJSON.version} activating on ${process.platform} ${process.arch}, VS Code ${vscode.version}`);
 	registerDiagnosticsCommand(context, () => languageClient);
@@ -41,7 +41,9 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 		LilyPondInstallation.onDidBecomeReady(async () => {
 			// Update components when installation becomes ready
 			diagnosticsProvider.updateAllDiagnostics();
-			await completionProvider.loadCompletions();
+			// The keyword list, if it's ever needed, must come from the version
+			// just detected rather than the one before it.
+			completionProvider.clearCompletions();
 			// Start (first detection) or restart (re-detection) the server so it
 			// picks up the freshly-detected words path.
 			await languageClient!.refresh();
@@ -134,7 +136,7 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 	}
 
 	// Return exports for testing access
-	return { LilyPondInstallation };
+	return { LilyPondInstallation, languageClient };
 }
 
 async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: vscode.ExtensionContext) {

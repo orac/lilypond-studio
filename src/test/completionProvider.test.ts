@@ -13,6 +13,10 @@ type LilyPondInstallationType = {
 	invalidate(): void;
 };
 
+type LanguageClientType = {
+	isRunning(): boolean;
+};
+
 /**
  * Opens a scratch document with the given content and returns the completions offered at its end.
  *
@@ -37,10 +41,11 @@ function labelsOf(completions: vscode.CompletionList): string[] {
 	return completions.items.map(item => (typeof item.label === 'string' ? item.label : item.label.label));
 }
 
-// The completions come from the installation's own lilypond-words, so every installed version is worth a run: a command that moved or was renamed between versions shows up as a failure against that version alone.
+// The completions come from the installation — its `ly/` files by way of the language server, or its lilypond-words when there's no server to be had — so every installed version is worth a run: a command that moved or was renamed between versions shows up as a failure against that version alone.
 for (const install of requireInstalls()) {
 	suite(`Completion Provider (LilyPond ${install.version})`, () => {
 		let LilyPondInstallation: LilyPondInstallationType;
+		let languageClient: LanguageClientType;
 
 		suiteSetup(async () => {
 			// Get the extension first (need it to access the bundled LilyPondInstallation)
@@ -58,8 +63,9 @@ for (const install of requireInstalls()) {
 
 			// Get the bundled LilyPondInstallation from extension exports
 			LilyPondInstallation = ext.exports.LilyPondInstallation;
+			languageClient = ext.exports.languageClient;
 
-			// Point the extension at the real installation without running it, so the completions are loaded from that version's lilypond-words.
+			// Point the extension at the real installation without running it, so both the server and (should it be needed) the keyword list read that version.
 			const mockInstallation = LilyPondInstallation.createMockInstance({
 				version: install.version,
 				executablePath: install.executablePath,
@@ -121,7 +127,28 @@ for (const install of requireInstalls()) {
 			);
 		});
 
-		test('version completion includes version number snippet', async () => {
+		// The next two are the same question — what does typing `\version ` get you? — asked of the two arrangements the extension supports, and each skips in the other's. A development checkout has a server binary in server/; the CI test job deliberately doesn't (see .github/workflows/ci.yml), so both paths are exercised across a full run.
+
+		test('the version argument completes to the installed version', async function () {
+			if (!languageClient.isRunning()) {
+				this.skip();
+			}
+
+			// Nothing short of the running server knows this number: it reaches the argument by way of the share directory the client passed at initialize.
+			const completions = await completionsAtEndOf('\\version ');
+
+			assert.deepStrictEqual(
+				labelsOf(completions),
+				[`"${install.version}"`],
+				'Should offer the installed version, quoted ready to write'
+			);
+		});
+
+		test('the keyword list offers a version snippet when there is no server', async function () {
+			if (languageClient.isRunning()) {
+				this.skip();
+			}
+
 			const completions = await completionsAtEndOf('\\ver');
 
 			const versionCompletion = completions.items.find(item => {
@@ -151,11 +178,21 @@ for (const install of requireInstalls()) {
 			);
 		});
 
-		test('completions include non-backslash words', async () => {
-			// Context names are the bulk of the word list's unprefixed entries, and Staff has been one since long before any version we support.
-			const completions = await completionsAtEndOf('Sta');
+		test('a command says where it came from', async function () {
+			if (!languageClient.isRunning()) {
+				this.skip();
+			}
 
-			assert.ok(labelsOf(completions).includes('Staff'), 'Should include "Staff" in completions');
+			// The server labels every name with the layer that answered for it, which is what tells your own \foo from LilyPond's in a list of a thousand.
+			const completions = await completionsAtEndOf('\\rel');
+
+			const relative = completions.items.find(item => {
+				const label = typeof item.label === 'string' ? item.label : item.label.label;
+				return label === '\\relative';
+			});
+
+			assert.ok(relative, 'Should have \\relative completion');
+			assert.strictEqual(relative!.detail, 'built-in', '\\relative is our own curated signature');
 		});
 
 		test('completion replaces correct range with backslash', async () => {

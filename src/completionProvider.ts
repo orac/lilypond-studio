@@ -4,29 +4,35 @@ import { LilyPondLanguageClient } from './languageClient';
 import { log } from './log';
 
 /**
- * Provides autocomplete suggestions for LilyPond commands.
+ * Provides autocomplete suggestions for LilyPond commands, for as long as
+ * there's no language server to do it better.
  *
- * Two sources feed this: the server's argument completions (narrow but
- * precise — only offered inside a closed-set command argument, e.g. `\repeat |`)
- * and the client-side keyword list loaded from `lilypond-words` (broad but
- * untargeted). Showing both together would bury the useful, targeted result in
- * the entire keyword list, so whenever the server has something to offer, its
- * result is shown alone; the keyword list is only a fallback for positions the
- * server has nothing to say about.
+ * The server knows the whole vocabulary too — and, unlike the keyword list
+ * read from `lilypond-words`, knows which commands are in scope where, what
+ * arguments each takes, and where each was defined. So whenever it's running,
+ * its answer is the whole answer, and the keyword list isn't even read. The
+ * list survives for the case the server can't cover: no bundled binary for
+ * this platform, or a build that failed to start.
  */
 export class LilyPondCompletionProvider implements vscode.CompletionItemProvider {
-	private completionItems: vscode.CompletionItem[] = [];
+	/** The keyword list, or `undefined` until something asks for it. */
+	private completionItems: vscode.CompletionItem[] | undefined;
 
 	constructor(private readonly languageClient: LilyPondLanguageClient) {}
 
 	/**
-	 * Loads completions from the lilypond-words file.
-	 * Called when LilyPondInstallation becomes ready.
+	 * Loads completions from the lilypond-words file, unless they're already
+	 * loaded. Lazy, so that the file is never read at all in the usual case
+	 * where the server is running and owns the vocabulary.
 	 */
-	public async loadCompletions(): Promise<void> {
+	private async ensureCompletions(): Promise<void> {
+		if (this.completionItems) {
+			return;
+		}
+
 		const installation = LilyPondInstallation.getInstance();
 		if (!installation) {
-			// Not ready yet - will be called again when ready
+			// Not ready yet - will be called again on the next request
 			return;
 		}
 
@@ -80,16 +86,17 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 	}
 
 	/**
-	 * Clears all completions.
-	 * Called when LilyPondInstallation is invalidated.
+	 * Forgets the keyword list, so the next request that needs it reads it
+	 * afresh. Called whenever the LilyPond installation changes or goes away:
+	 * the words of one version aren't the words of another.
 	 */
 	public clearCompletions(): void {
-		this.completionItems = [];
+		this.completionItems = undefined;
 	}
 
 	/**
-	 * Provides completion items: the server's argument completions alone when it
-	 * has any, otherwise the keyword-list fallback.
+	 * Provides completion items: the server's, whenever the server is up,
+	 * otherwise the keyword-list fallback.
 	 */
 	public async provideCompletionItems(
 		document: vscode.TextDocument,
@@ -98,8 +105,16 @@ export class LilyPondCompletionProvider implements vscode.CompletionItemProvider
 		_context: vscode.CompletionContext
 	): Promise<vscode.CompletionItem[]> {
 		const serverItems = await this.languageClient.requestCompletions(document, position, token);
-		if (serverItems.length > 0) {
+		if (this.languageClient.isRunning()) {
+			// Empty included: the server saying "nothing here" is an answer, and
+			// answering it with the whole keyword list would undo the point of
+			// asking something that knows what's in scope.
 			return serverItems;
+		}
+
+		await this.ensureCompletions();
+		if (!this.completionItems) {
+			return [];
 		}
 
 		// Determine the range to replace
