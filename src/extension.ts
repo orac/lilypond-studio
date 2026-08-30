@@ -6,6 +6,7 @@ import { LilyPondInstallation } from './LilyPondInstallation';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
 import { registerVersionDiagnostics } from './versionDiagnostics';
 import { registerCompletionProvider } from './completionProvider';
+import { registerRenameCommand } from './renameCommand';
 import { LilyPondLanguageClient } from './languageClient';
 import { registerTaskProvider, registerEngraveOnSave } from './tasks';
 import { registerDiagnosticsCommand } from './diagnosticsCommand';
@@ -90,6 +91,9 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 	context.subscriptions.push({
 		dispose: () => LilyPondInstallation.disposeEvents()
 	});
+
+	// Follow-up rename the language server asks for after extract-to-variable.
+	registerRenameCommand(context);
 
 	// Register convert-ly command and code action provider
 	registerConvertLyCommand(context);
