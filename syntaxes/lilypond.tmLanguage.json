@@ -63,7 +63,31 @@
     "lyrics": {
       "patterns": [
         {
-          "begin": "(\\\\lyricmode)\\s*(\\{)",
+          "comment": "\\lyricsto with a brace block for a body, e.g. \\lyricsto \"melody\" { ... }",
+          "begin": "(\\\\lyricsto)\\s+(\"[^\"]*\"|[^\\s{}\\\\\"]+)\\s*(\\{)",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "variable.other.lilypond" },
+            "3": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.lilypond" }
+          },
+          "patterns": [
+            { "include": "#lyrics-content" }
+          ]
+        },
+        {
+          "comment": "\\lyricsto whose body is another lyric expression, e.g. \\lyricsto melody \\lyricmode { ... }",
+          "match": "(\\\\lyricsto)\\s+(\"[^\"]*\"|[^\\s{}\\\\\"]+)",
+          "captures": {
+            "1": { "name": "support.function.lilypond" },
+            "2": { "name": "variable.other.lilypond" }
+          }
+        },
+        {
+          "begin": "(\\\\(?:lyricmode|addlyrics|lyrics))\\s*(\\{)",
           "end": "\\}",
           "beginCaptures": {
             "1": { "name": "support.function.lilypond" },
@@ -72,14 +96,8 @@
           "endCaptures": {
             "0": { "name": "punctuation.section.braces.lilypond" }
           },
-          "contentName": "string.quoted.other.lyrics.lilypond",
           "patterns": [
-            { "include": "#comments" },
-            { "include": "#markup" },
-            { "include": "#commands" },
-            { "include": "#durations" },
-            { "name": "constant.character.lilypond", "match": "--" },
-            { "include": "#lyrics-brace-block" }
+            { "include": "#lyrics-content" }
           ]
         }
       ]
@@ -93,14 +111,32 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.braces.lilypond" }
       },
-      "contentName": "string.quoted.other.lyrics.lilypond",
+      "patterns": [
+        { "include": "#lyrics-content" }
+      ]
+    },
+    "lyrics-content": {
+      "comment": "Only the syllables are strings; braces, operators and commands keep their own scopes",
       "patterns": [
         { "include": "#comments" },
+        { "include": "#strings" },
         { "include": "#markup" },
+        { "include": "#scheme" },
+        { "include": "#declarations" },
         { "include": "#commands" },
         { "include": "#durations" },
-        { "name": "constant.character.lilypond", "match": "--" },
-        { "include": "#lyrics-brace-block" }
+        {
+          "comment": "Syllable hyphen and extender line",
+          "name": "constant.character.lilypond",
+          "match": "--|__"
+        },
+        { "include": "#lyrics-brace-block" },
+        { "include": "#operators" },
+        {
+          "comment": "A syllable: anything that isn't a command, a string, punctuation or an operator",
+          "name": "string.quoted.other.lyrics.lilypond",
+          "match": "[^\\s\\\\{}\"%#=~|]+"
+        }
       ]
     },
     "strings": {

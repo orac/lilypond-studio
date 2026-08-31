@@ -5,9 +5,14 @@
 #          ^ source.lilypond
 #           ^ source.lilypond punctuation.section.braces.lilypond
 >  Hel -- lo world
-#^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
-#      ^^ source.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
-#        ^^^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#^^ source.lilypond
+#  ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#     ^ source.lilypond
+#      ^^ source.lilypond constant.character.lilypond
+#        ^ source.lilypond
+#         ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#           ^ source.lilypond
+#            ^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
 >}
 #^ source.lilypond punctuation.section.braces.lilypond
 >
@@ -18,16 +23,22 @@
 #          ^ source.lilypond
 #           ^ source.lilypond punctuation.section.braces.lilypond
 >  \repeat unfold 2 { la -- la }
-#^^ source.lilypond string.quoted.other.lyrics.lilypond
-#  ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
-#         ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
-#                 ^ source.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
-#                  ^ source.lilypond string.quoted.other.lyrics.lilypond
-#                   ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
-#                    ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                        ^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
-#                          ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                              ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#^^ source.lilypond
+#  ^^^^^^^ source.lilypond support.function.lilypond
+#         ^ source.lilypond
+#          ^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                ^ source.lilypond
+#                 ^ source.lilypond constant.numeric.duration.lilypond
+#                  ^ source.lilypond
+#                   ^ source.lilypond punctuation.section.braces.lilypond
+#                    ^ source.lilypond
+#                     ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                       ^ source.lilypond
+#                        ^^ source.lilypond constant.character.lilypond
+#                          ^ source.lilypond
+#                           ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                             ^ source.lilypond
+#                              ^ source.lilypond punctuation.section.braces.lilypond
 >}
 #^ source.lilypond punctuation.section.braces.lilypond
 >
@@ -38,22 +49,171 @@
 #          ^ source.lilypond
 #           ^ source.lilypond punctuation.section.braces.lilypond
 >  \repeat unfold 2 { \repeat unfold 2 { la } }
-#^^ source.lilypond string.quoted.other.lyrics.lilypond
-#  ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
-#         ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
-#                 ^ source.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
-#                  ^ source.lilypond string.quoted.other.lyrics.lilypond
-#                   ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
-#                    ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                     ^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond support.function.lilypond
-#                            ^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                                    ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond constant.numeric.duration.lilypond
-#                                     ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                                      ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
-#                                       ^^^^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                                           ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
-#                                            ^ source.lilypond string.quoted.other.lyrics.lilypond string.quoted.other.lyrics.lilypond
-#                                             ^ source.lilypond string.quoted.other.lyrics.lilypond punctuation.section.braces.lilypond
+#^^ source.lilypond
+#  ^^^^^^^ source.lilypond support.function.lilypond
+#         ^ source.lilypond
+#          ^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                ^ source.lilypond
+#                 ^ source.lilypond constant.numeric.duration.lilypond
+#                  ^ source.lilypond
+#                   ^ source.lilypond punctuation.section.braces.lilypond
+#                    ^ source.lilypond
+#                     ^^^^^^^ source.lilypond support.function.lilypond
+#                            ^ source.lilypond
+#                             ^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                   ^ source.lilypond
+#                                    ^ source.lilypond constant.numeric.duration.lilypond
+#                                     ^ source.lilypond
+#                                      ^ source.lilypond punctuation.section.braces.lilypond
+#                                       ^ source.lilypond
+#                                        ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                          ^ source.lilypond
+#                                           ^ source.lilypond punctuation.section.braces.lilypond
+#                                            ^ source.lilypond
+#                                             ^ source.lilypond punctuation.section.braces.lilypond
 >}
 #^ source.lilypond punctuation.section.braces.lilypond
+>
+>% Property settings inside lyrics keep their own scopes
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\lyricmode {
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+>  \set stanza = "1."
+#^^ source.lilypond
+#  ^^^^ source.lilypond support.function.lilypond
+#      ^ source.lilypond
+#       ^^^^^^^^^ source.lilypond variable.other.declaration.lilypond
+#                ^ source.lilypond string.quoted.double.lilypond
+#                 ^^ source.lilypond string.quoted.double.lilypond
+#                   ^ source.lilypond string.quoted.double.lilypond
+>  Once in roy -- al Da -- vid's ci -- ty __
+#^^ source.lilypond
+#  ^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#      ^ source.lilypond
+#       ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#         ^ source.lilypond
+#          ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#             ^ source.lilypond
+#              ^^ source.lilypond constant.character.lilypond
+#                ^ source.lilypond
+#                 ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                   ^ source.lilypond
+#                    ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                      ^ source.lilypond
+#                       ^^ source.lilypond constant.character.lilypond
+#                         ^ source.lilypond
+#                          ^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                               ^ source.lilypond
+#                                ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                  ^ source.lilypond
+#                                   ^^ source.lilypond constant.character.lilypond
+#                                     ^ source.lilypond
+#                                      ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                        ^ source.lilypond
+#                                         ^^ source.lilypond constant.character.lilypond
+>}
+#^ source.lilypond punctuation.section.braces.lilypond
+>
+>% \addlyrics attaches to the preceding music
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\relative c' { c4 d e f }
+#^^^^^^^^^ source.lilypond support.function.lilypond
+#         ^ source.lilypond
+#          ^^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#            ^ source.lilypond
+#             ^ source.lilypond punctuation.section.braces.lilypond
+#              ^ source.lilypond
+#               ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                 ^ source.lilypond
+#                  ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                   ^ source.lilypond
+#                    ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                     ^ source.lilypond
+#                      ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                       ^ source.lilypond
+#                        ^ source.lilypond punctuation.section.braces.lilypond
+>\addlyrics { Now I know my ABC }
+#^^^^^^^^^^ source.lilypond support.function.lilypond
+#          ^ source.lilypond
+#           ^ source.lilypond punctuation.section.braces.lilypond
+#            ^ source.lilypond
+#             ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                ^ source.lilypond
+#                 ^ source.lilypond string.quoted.other.lyrics.lilypond
+#                  ^ source.lilypond
+#                   ^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                       ^ source.lilypond
+#                        ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                          ^ source.lilypond
+#                           ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                              ^ source.lilypond
+#                               ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% \lyricsto names the voice to follow
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\new Lyrics \lyricsto "melody" { Twin -- kle twin -- kle }
+#^^^^ source.lilypond support.function.lilypond
+#    ^^^^^^^^ source.lilypond
+#            ^^^^^^^^^ source.lilypond support.function.lilypond
+#                     ^ source.lilypond
+#                      ^^^^^^^^ source.lilypond variable.other.lilypond
+#                              ^ source.lilypond
+#                               ^ source.lilypond punctuation.section.braces.lilypond
+#                                ^ source.lilypond
+#                                 ^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                     ^ source.lilypond
+#                                      ^^ source.lilypond constant.character.lilypond
+#                                        ^ source.lilypond
+#                                         ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                            ^ source.lilypond
+#                                             ^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                                 ^ source.lilypond
+#                                                  ^^ source.lilypond constant.character.lilypond
+#                                                    ^ source.lilypond
+#                                                     ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                                        ^ source.lilypond
+#                                                         ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% \lyricsto with an explicit lyric mode body
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\new Lyrics \lyricsto melody \lyricmode { lit -- tle star }
+#^^^^ source.lilypond support.function.lilypond
+#    ^^^^^^^^ source.lilypond
+#            ^^^^^^^^^ source.lilypond support.function.lilypond
+#                     ^ source.lilypond
+#                      ^^^^^^ source.lilypond variable.other.lilypond
+#                            ^ source.lilypond
+#                             ^^^^^^^^^^ source.lilypond support.function.lilypond
+#                                       ^ source.lilypond
+#                                        ^ source.lilypond punctuation.section.braces.lilypond
+#                                         ^ source.lilypond
+#                                          ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                             ^ source.lilypond
+#                                              ^^ source.lilypond constant.character.lilypond
+#                                                ^ source.lilypond
+#                                                 ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                                    ^ source.lilypond
+#                                                     ^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                                                         ^ source.lilypond
+#                                                          ^ source.lilypond punctuation.section.braces.lilypond
+>
+>% \lyrics is the shorthand mode switch
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\new Lyrics \lyrics { Do re mi }
+#^^^^ source.lilypond support.function.lilypond
+#    ^^^^^^^^ source.lilypond
+#            ^^^^^^^ source.lilypond support.function.lilypond
+#                   ^ source.lilypond
+#                    ^ source.lilypond punctuation.section.braces.lilypond
+#                     ^ source.lilypond
+#                      ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                        ^ source.lilypond
+#                         ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                           ^ source.lilypond
+#                            ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#                              ^ source.lilypond
+#                               ^ source.lilypond punctuation.section.braces.lilypond
 >

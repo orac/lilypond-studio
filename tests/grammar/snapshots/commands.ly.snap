@@ -74,9 +74,14 @@
 #          ^ source.lilypond
 #           ^ source.lilypond punctuation.section.braces.lilypond
 >  Hel -- lo world
-#^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
-#      ^^ source.lilypond string.quoted.other.lyrics.lilypond constant.character.lilypond
-#        ^^^^^^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#^^ source.lilypond
+#  ^^^ source.lilypond string.quoted.other.lyrics.lilypond
+#     ^ source.lilypond
+#      ^^ source.lilypond constant.character.lilypond
+#        ^ source.lilypond
+#         ^^ source.lilypond string.quoted.other.lyrics.lilypond
+#           ^ source.lilypond
+#            ^^^^^ source.lilypond string.quoted.other.lyrics.lilypond
 >}
 #^ source.lilypond punctuation.section.braces.lilypond
 >
