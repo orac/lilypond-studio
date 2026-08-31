@@ -4,6 +4,14 @@
 		"lib": [
 			"ES2022",
 			"DOM"
-		]
-	}
+		],
+		"types": [],
+		"rootDir": "."
+	},
+	"include": [
+		"."
+	],
+	"exclude": [
+		"node_modules"
+	]
 }
