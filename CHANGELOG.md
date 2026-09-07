@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] - 2026-09-07
+
+- Updates lyrics highlighting using semantic tokens from the LSP server. This makes commands inside lyrics, and starting lyrics with `\new SomeContext`, which are too complex for the TM grammar to handle, highlight reliably.
+- Improves the use of build tasks:
+    - They're contributed when you're looking at a PDF preview.
+    - The `file` option in a JSON build task overrides the open file, if set. (This doesn't change what happens if you don't have a tasks.json file.)
+    - More debug output in the log/diagnostics.
+
 ## [1.0.0] - 2026-08-30
 
 - Uses LSP server for a lot more understanding of the file:-
