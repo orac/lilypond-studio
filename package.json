@@ -35,7 +35,8 @@
           "lilypond"
         ],
         "extensions": [
-          ".ly"
+          ".ly",
+          ".ily"
         ],
         "configuration": "./language-configuration.json",
         "icon": {

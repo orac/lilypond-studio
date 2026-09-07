@@ -3,6 +3,8 @@ import * as path from 'path';
 import { LilyPondInstallation } from './LilyPondInstallation';
 import { LilyPondTaskDefinition, resolveTaskOptions } from './taskDefinition';
 import { ensureOutputDirectory } from './outputPaths';
+import { PdfViewerPanel } from './pdfViewer';
+import { log } from './log';
 
 /** Builds the task that engraves `uri`.
  *
@@ -69,6 +71,23 @@ export function registerTaskProvider(context: vscode.ExtensionContext): void {
 						createLilypondTask({ type: 'lilypond', mode: 'preview' }),
 						createLilypondTask({ type: 'lilypond', mode: 'publish' }),
 					];
+				}
+				// No LilyPond editor is focused, but the PDF preview it produced might be:
+				// shift+cmd+B should still engrave the score the user is looking at.
+				const previewSource = PdfViewerPanel.activeSourceUri;
+				if (previewSource) {
+					return [
+						createLilypondTask({ type: 'lilypond', mode: 'preview' }, previewSource),
+						createLilypondTask({ type: 'lilypond', mode: 'publish' }, previewSource),
+					];
+				}
+				// Nothing to build. Logged because "No build task to run found" on its own gives
+				// no clue whether the wrong tab had focus or there was genuinely no LilyPond file
+				// open — this turns a field report into a diagnosis.
+				if (!editor) {
+					log.debug('No lilypond build task: no active text editor (a webview or custom editor tab may have focus)');
+				} else {
+					log.debug(`No lilypond build task: active editor is ${editor.document.uri.toString()} (languageId ${editor.document.languageId})`);
 				}
 				return [];
 			},

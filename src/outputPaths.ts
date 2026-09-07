@@ -4,6 +4,16 @@ import * as vscode from 'vscode';
 import { configuredTaskDefinitions, resolveTaskOptions } from './taskDefinition';
 import { log } from './log';
 
+/** The most recent {@link ensureOutputDirectory} failure, if any.
+ *
+ * macOS silently denies filesystem access to ~/Documents and ~/Desktop under TCC unless the app holds the relevant permission, so on that platform a build can fail here with nothing to show for it beyond an entry in the log channel. Kept so the diagnostics report can surface it even when nobody thought to check the log at the time.
+ */
+let lastEnsureOutputDirectoryFailure: { directory: string; error: unknown } | undefined;
+
+export function getLastEnsureOutputDirectoryFailure(): { directory: string; error: unknown } | undefined {
+	return lastEnsureOutputDirectoryFailure;
+}
+
 /** Creates `directory` and any missing parents.
  *
  * lilypond treats `--output` as a filename prefix unless it already names an existing directory, so `-o scores` on a fresh checkout writes a file called `scores.pdf` next to the source instead of `scores/song.pdf`. Creating the directory first is what makes the setting mean what it says.
@@ -15,6 +25,7 @@ export function ensureOutputDirectory(directory: string): void {
 		fs.mkdirSync(directory, { recursive: true });
 	} catch (error) {
 		log.error(`Could not create the output directory ${directory}`, error);
+		lastEnsureOutputDirectoryFailure = { directory, error };
 	}
 }
 
@@ -30,9 +41,12 @@ export function candidateOutputDirectories(sourceUri: vscode.Uri): string[] {
 	return [...new Set(directories)];
 }
 
-/** The PDF filename lilypond produces for a source file, without any directory. */
+/** The PDF filename lilypond produces for a source file, without any directory.
+ *
+ * `.ily` as well as `.ly`: an include file is rarely engraved on its own, but when one is, lilypond drops its extension just the same.
+ */
 export function pdfBasename(sourceUri: vscode.Uri): string {
-	return path.basename(sourceUri.fsPath).replace(/\.ly$/, '') + '.pdf';
+	return path.basename(sourceUri.fsPath).replace(/\.i?ly$/, '') + '.pdf';
 }
 
 /** Chooses which of several candidate PDFs to show.

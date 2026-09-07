@@ -38,6 +38,15 @@ function webviewOptions(extensionUri: vscode.Uri, pdfUri: vscode.Uri): vscode.We
 /** Manages a PDF viewer webview panel */
 export class PdfViewerPanel {
 	public static currentPanel: PdfViewerPanel | undefined;
+
+	/** The source `.ly` file behind the PDF preview, if that preview is the focused tab.
+	 *
+	 * Used so that a build task requested with the preview focused (shift+cmd+B on macOS, where a webview holds focus and `activeTextEditor` is undefined) still knows which file to engrave.
+	 */
+	public static get activeSourceUri(): vscode.Uri | undefined {
+		const current = PdfViewerPanel.currentPanel;
+		return current?.panel.active ? current.sourceUri : undefined;
+	}
 	private readonly panel: vscode.WebviewPanel;
 	private readonly extensionUri: vscode.Uri;
 	private pdfUri: vscode.Uri;

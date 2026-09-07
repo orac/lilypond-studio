@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import { log } from './log';
 import { LilyPondInstallation } from './LilyPondInstallation';
 import { LilyPondLanguageClient } from './languageClient';
+import { configuredTaskDefinitions, resolveTaskOptions } from './taskDefinition';
+import { getLastEnsureOutputDirectoryFailure } from './outputPaths';
 
 /** Files the PDF viewer webview loads at runtime, relative to the extension root.
  *
@@ -23,6 +25,8 @@ const reportedSettings = [
 	'includeDirs',
 	'languageServerPath',
 	'engraveOnSave',
+	'outputDirectory',
+	'commandOptions',
 ];
 
 function describeFile(label: string, filePath: string | null | undefined): string {
@@ -30,6 +34,65 @@ function describeFile(label: string, filePath: string | null | undefined): strin
 		return `${label}: not set`;
 	}
 	return `${label}: ${filePath} (${fs.existsSync(filePath) ? 'present' : 'MISSING'})`;
+}
+
+/** The lilypond executable a provided task would run, mirroring the fallback chain in `tasks.ts:createLilypondTask`. */
+function resolveLilypondExecutablePath(): string {
+	return LilyPondInstallation.getInstance()?.getExecutablePath() ??
+		vscode.workspace.getConfiguration('lilypondStudio').get<string>('executablePath') ??
+		'lilypond';
+}
+
+/** Everything relevant to "why did VS Code not offer a build task", worked out from the report alone.
+ *
+ * Prompted by a bug report where shift+cmd+B produced "No build task to run found" with no further clue: the workspace folder, active editor and configured task definitions between them cover every reason VS Code's task provider comes up empty.
+ */
+function collectTaskDiagnostics(): string[] {
+	const lines: string[] = [];
+
+	const folders = vscode.workspace.workspaceFolders;
+	if (folders && folders.length > 0) {
+		lines.push(`Workspace folders: ${folders.length}`);
+		for (const folder of folders) {
+			lines.push(`  ${folder.uri.fsPath}`);
+		}
+	} else {
+		lines.push('Workspace folders: none — a folderless window; VS Code will not offer build tasks');
+	}
+
+	const editor = vscode.window.activeTextEditor;
+	if (editor) {
+		lines.push(`Active editor: ${editor.document.uri.toString()} (languageId: ${editor.document.languageId}, scheme: ${editor.document.uri.scheme})`);
+	} else {
+		lines.push('Active editor: none — likely a webview or custom editor tab has focus, which is the usual reason a build shortcut finds no task');
+	}
+
+	const definitions = configuredTaskDefinitions(editor?.document.uri);
+	if (definitions.length > 0) {
+		lines.push(`Configured lilypond tasks in tasks.json: ${definitions.length}`);
+		for (const definition of definitions) {
+			lines.push(`  ${JSON.stringify(definition)}`);
+		}
+	} else {
+		lines.push('Configured lilypond tasks in tasks.json: none');
+	}
+
+	if (editor && editor.document.languageId === 'lilypond') {
+		const options = resolveTaskOptions({ type: 'lilypond' }, editor.document.uri);
+		lines.push('Resolved build options for the active file:');
+		lines.push(`  mode: ${options.mode}`);
+		lines.push(`  outputDirectory: ${options.outputDirectory ?? '(beside the source file)'}`);
+		lines.push(`  includeDirs: ${JSON.stringify(options.includeDirs)}`);
+		lines.push(`  commandOptions: ${JSON.stringify(options.commandOptions)}`);
+		lines.push(`  lilypond executable: ${resolveLilypondExecutablePath()}`);
+	}
+
+	const outputDirectoryFailure = getLastEnsureOutputDirectoryFailure();
+	if (outputDirectoryFailure) {
+		lines.push(`Output directory creation failed: ${outputDirectoryFailure.directory} (${outputDirectoryFailure.error})`);
+	}
+
+	return lines;
 }
 
 /** Collects everything a maintainer needs to reproduce an environment-specific problem. */
@@ -62,6 +125,10 @@ function collectDiagnostics(context: vscode.ExtensionContext, languageClient: Li
 	for (const asset of webviewAssets) {
 		lines.push(describeFile(asset, context.asAbsolutePath(asset)));
 	}
+
+	lines.push('');
+	lines.push('Tasks');
+	lines.push(...collectTaskDiagnostics());
 
 	lines.push('');
 	lines.push('Settings');
