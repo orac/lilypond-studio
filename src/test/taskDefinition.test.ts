@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { resolveOutputDirectory, resolveTaskOptions, substituteVariables, VariableContext } from '../taskDefinition';
+import { resolveInputFile, resolveOutputDirectory, resolveTaskOptions, substituteVariables, VariableContext } from '../taskDefinition';
 
 const context: VariableContext = {
 	workspaceFolder: path.resolve('/scores'),
@@ -26,6 +26,29 @@ suite('substituteVariables', () => {
 
 	test('passes through a string with no variables', () => {
 		assert.strictEqual(substituteVariables('out/pdf', context), 'out/pdf');
+	});
+});
+
+suite('resolveInputFile', () => {
+	test('resolves a relative path against the workspace folder, not the source directory', () => {
+		assert.strictEqual(resolveInputFile('score.ly', context), path.resolve(context.workspaceFolder!, 'score.ly'));
+	});
+
+	test('keeps an absolute path', () => {
+		const absolute = path.resolve('/scores/motets/score.ly');
+		assert.strictEqual(resolveInputFile(absolute, context), absolute);
+	});
+
+	test('resolves after substitution', () => {
+		assert.strictEqual(
+			resolveInputFile('${workspaceFolder}/score.ly', context),
+			path.resolve(context.workspaceFolder!, 'score.ly')
+		);
+	});
+
+	test('falls back to the source directory outside a workspace', () => {
+		const noWorkspace: VariableContext = { ...context, workspaceFolder: undefined };
+		assert.strictEqual(resolveInputFile('score.ly', noWorkspace), path.resolve(noWorkspace.fileDirname, 'score.ly'));
 	});
 });
 

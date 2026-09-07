@@ -9,7 +9,12 @@ export interface LilyPondTaskDefinition extends vscode.TaskDefinition {
 	type: 'lilypond';
 	/** `preview` keeps point-and-click links in the PDF; `publish` strips them. Defaults to `preview`. */
 	mode?: 'preview' | 'publish';
-	/** The `.ly` file to engrave. Defaults to the active editor's file. */
+	/** The `.ly` file to engrave. Defaults to the active editor's file.
+	 *
+	 * Naming one pins the task to that score however the build was triggered, so that editing an `\include`d `.ily` file — or saving it with engrave-on-save — still engraves the score that includes it rather than the fragment on screen.
+	 *
+	 * Relative paths are resolved against the workspace folder, and `${workspaceFolder}` and friends are substituted.
+	 */
 	file?: string;
 	/** Directory lilypond writes its output to, passed as `--output`.
 	 *
@@ -57,12 +62,29 @@ export function resolveOutputDirectory(configured: string, context: VariableCont
 	return path.resolve(context.fileDirname, substituteVariables(configured, context));
 }
 
+/** Resolves a task's `file` to an absolute path.
+ *
+ * Relative to the workspace folder rather than to the source directory {@link resolveOutputDirectory} uses: the reason to name a file is usually to engrave a score *other* than the one being edited, so the edited file's directory is the thing you are trying to get away from.
+ */
+export function resolveInputFile(file: string, context: VariableContext): string {
+	return path.resolve(context.workspaceFolder ?? context.fileDirname, substituteVariables(file, context));
+}
+
 /** The variable context for a source file. */
 export function variableContextFor(sourceUri: vscode.Uri): VariableContext {
 	return {
 		workspaceFolder: vscode.workspace.getWorkspaceFolder(sourceUri)?.uri.fsPath,
 		fileDirname: path.dirname(sourceUri.fsPath),
 	};
+}
+
+/** The variable context for a task with no source file to work from, as when its own `file` is what supplies one.
+ *
+ * The first workspace folder is all there is to go on. In a folderless window there is nothing at all, and only an absolute `file` can resolve to what the user meant.
+ */
+export function workspaceVariableContext(): VariableContext {
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+	return { workspaceFolder, fileDirname: workspaceFolder ?? '' };
 }
 
 /** A task definition with its settings fallbacks applied and its variables expanded. */

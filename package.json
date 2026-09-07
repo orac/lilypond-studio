@@ -126,7 +126,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "description": "The LilyPond file to build"
+            "description": "The LilyPond file to build. Defaults to the file being edited; naming one pins the task to that score instead, so that editing or saving an \\included .ily file still engraves the score that includes it. Relative paths are resolved against the workspace folder; ${workspaceFolder} and ${fileDirname} are substituted."
           },
           "mode": {
             "type": "string",

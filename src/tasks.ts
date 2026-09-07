@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { LilyPondInstallation } from './LilyPondInstallation';
-import { LilyPondTaskDefinition, resolveTaskOptions } from './taskDefinition';
+import { LilyPondTaskDefinition, resolveInputFile, resolveTaskOptions, variableContextFor, workspaceVariableContext } from './taskDefinition';
 import { ensureOutputDirectory } from './outputPaths';
 import { PdfViewerPanel } from './pdfViewer';
 import { log } from './log';
@@ -18,9 +18,12 @@ function createLilypondTask(definition: LilyPondTaskDefinition, uri?: vscode.Uri
 		vscode.workspace.getConfiguration('lilypondStudio').get<string>('executablePath') ??
 		'lilypond';
 
-	const resolvedUri = uri ??
-		(definition.file ? vscode.Uri.file(definition.file) : undefined) ??
-		vscode.window.activeTextEditor?.document.uri;
+	// The file we were handed — the active editor, the document just saved, the score behind a focused PDF — supplies the variable context, but a `file` in the definition then overrides it: a task that names a score means to engrave that score, whatever the user happens to be looking at or editing.
+	const contextUri = uri ?? vscode.window.activeTextEditor?.document.uri;
+	const definedFile = definition.file
+		? vscode.Uri.file(resolveInputFile(definition.file, contextUri ? variableContextFor(contextUri) : workspaceVariableContext()))
+		: undefined;
+	const resolvedUri = definedFile ?? contextUri;
 	const filePath = resolvedUri?.fsPath ?? '*.ly';
 	const fileDir = resolvedUri ? path.dirname(resolvedUri.fsPath) : undefined;
 	const options = resolveTaskOptions(definition, resolvedUri);
