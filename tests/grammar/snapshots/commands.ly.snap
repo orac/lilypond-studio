@@ -33,6 +33,43 @@
 #^^^^^ source.lilypond support.function.lilypond
 #     ^^^^^^^^ source.lilypond
 >
+>% Repeat abbreviations (LilyPond 2.26): \% for \repeat percent, \* for \repeat unfold
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>\% 2 { c4 d e f }
+#^^ source.lilypond support.function.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond punctuation.section.braces.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#           ^ source.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^ source.lilypond
+#              ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#               ^ source.lilypond
+#                ^ source.lilypond punctuation.section.braces.lilypond
+>\* 2 { c4 d e f }
+#^^ source.lilypond support.function.lilypond
+#  ^ source.lilypond
+#   ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#    ^ source.lilypond
+#     ^ source.lilypond punctuation.section.braces.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^ source.lilypond
+#          ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#           ^ source.lilypond
+#            ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#             ^ source.lilypond
+#              ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#               ^ source.lilypond
+#                ^ source.lilypond punctuation.section.braces.lilypond
+>
 >% Variable declarations
 #^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
 >melody = { c4 d e f }

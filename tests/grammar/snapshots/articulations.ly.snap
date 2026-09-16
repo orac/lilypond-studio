@@ -79,3 +79,27 @@
 #    ^^^^^^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
 #            ^^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
 >
+>% Spanner/item ID assignment (\=), for overlapping slurs
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ source.lilypond comment.line.percentage.lilypond
+>c4\=1( d4\=2( e4\=1) f4\=2)
+#^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+# ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#  ^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#    ^^ source.lilypond meta.note.lilypond
+#      ^ source.lilypond
+#       ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#        ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#         ^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#           ^^ source.lilypond meta.note.lilypond
+#             ^ source.lilypond
+#              ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#               ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                ^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#                  ^ source.lilypond meta.note.lilypond
+#                   ^^ source.lilypond
+#                     ^ source.lilypond meta.note.lilypond constant.language.pitch.lilypond
+#                      ^ source.lilypond meta.note.lilypond constant.numeric.duration.lilypond
+#                       ^^ source.lilypond meta.note.lilypond support.function.articulation.lilypond
+#                         ^ source.lilypond meta.note.lilypond
+#                          ^^ source.lilypond
+>

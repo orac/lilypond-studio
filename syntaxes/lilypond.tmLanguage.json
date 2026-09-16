@@ -157,6 +157,11 @@
     "commands": {
       "patterns": [
         {
+          "comment": "\\%, \\* and \\= (LilyPond 2.26's \\repeat percent/unfold abbreviations and spanner-ID assignment): each is a single character that isn't part of a symbol, so the escaped word is exactly two characters long. Matched ahead of the general command pattern below so the % and * don't fall through to the comment and duration-multiplier patterns instead.",
+          "name": "support.function.lilypond",
+          "match": "\\\\[%*=]"
+        },
+        {
           "name": "support.function.lilypond",
           "match": "\\\\[a-zA-Z_'-]+\\b"
         }
@@ -248,9 +253,9 @@
           "match": "[-_^](?=\\\\)"
         },
         {
-          "comment": "Backslash command attached to note (articulation, dynamic, etc.)",
+          "comment": "Backslash command attached to note (articulation, dynamic, etc.), including \\= for spanner/item IDs (e.g. c\\=1( )",
           "name": "support.function.articulation.lilypond",
-          "match": "\\\\[a-zA-Z]+"
+          "match": "\\\\(?:[a-zA-Z]+|=)"
         }
       ]
     },

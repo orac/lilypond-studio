@@ -7,6 +7,10 @@
 \key c \major
 \clef treble
 
+% Repeat abbreviations (LilyPond 2.26): \% for \repeat percent, \* for \repeat unfold
+\% 2 { c4 d e f }
+\* 2 { c4 d e f }
+
 % Variable declarations
 melody = { c4 d e f }
 

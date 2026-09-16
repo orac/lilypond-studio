@@ -11,3 +11,6 @@ c4-\staccato d4^\fermata e4_\accent
 
 % Multiple articulations on one note
 c4-.\fermata\pp
+
+% Spanner/item ID assignment (\=), for overlapping slurs
+c4\=1( d4\=2( e4\=1) f4\=2)
