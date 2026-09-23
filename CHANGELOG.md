@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Adds a formatter, which reindents a file (or selection) by its nesting of `{ }`, `<< >>`, `#{ #}` and Scheme parentheses. It keeps the file's line breaks, and leaves lines starting inside block comments and multi-line strings alone.
+- Pressing Enter before a `}`, `>>` or `#}` moves it back out to the level of its opener, and a line that opens a `{` or `<<` without closing it indents the next line, even when there's music after the opener.
+
 ## [1.0.1] - 2026-09-07
 
 - Updates lyrics highlighting using semantic tokens from the LSP server. This makes commands inside lyrics, and starting lyrics with `\new SomeContext`, which are too complex for the TM grammar to handle, highlight reliably.

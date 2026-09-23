@@ -6,6 +6,7 @@ import { LilyPondInstallation } from './LilyPondInstallation';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
 import { registerVersionDiagnostics } from './versionDiagnostics';
 import { registerCompletionProvider } from './completionProvider';
+import { registerFormatter } from './formatter';
 import { registerRenameCommand } from './renameCommand';
 import { LilyPondLanguageClient } from './languageClient';
 import { registerTaskProvider, registerEngraveOnSave } from './tasks';
@@ -25,6 +26,7 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 	const diagnosticsProvider = registerVersionDiagnostics(context);
 	languageClient = new LilyPondLanguageClient(context);
 	const completionProvider = registerCompletionProvider(context, languageClient);
+	registerFormatter(context);
 
 	// Brings the language server up when a .ly file is open. On a successful
 	// detection, onDidBecomeReady starts it with the words path in hand, so we

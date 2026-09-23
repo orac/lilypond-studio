@@ -5,8 +5,12 @@
   },
   "brackets": [
     ["{", "}"],
-    ["<<", ">>"],
+    ["<<", ">>"]
   ],
+  "indentationRules": {
+    "increaseIndentPattern": "^(\\\\.|[^\\\\%])*(\\{(\\\\.|[^\\\\%}])*|<<(\\\\.|(?!>>)[^\\\\%])*)(%.*)?$",
+    "decreaseIndentPattern": "^\\s*(\\}|>>|#\\})"
+  },
   "autoClosingPairs": [
     { "open": "#{", "close": "#}" },
     { "open": "{", "close": "}" },

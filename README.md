@@ -6,6 +6,7 @@ This is an extension to help you when editing LilyPond files in VS Code. It prov
 * Red squiggles for (some) syntax errors as you type, before even running LilyPond
 * **Tab-completion** of built-in commands, and variables in your file
 * **Go to definition** and **find references** for variables (only basic `foo = { music }` for now, not Scheme commands)
+* **Formatter** that reindents files by their `{ }`, `<< >>` and Scheme parentheses, leaving line breaks as they are
 * **Build tasks** for engraving in preview/publish modes
     * Optional **engrave on save**
     * Problem parser gives you **red squiggles for LilyPond warnings and errors**

@@ -57,6 +57,7 @@ The build is orchestrated by `esbuild.js`, which bundles both targets; it accept
 | `src/versionDiagnostics.ts` | Detects outdated `\version` directives |
 | `src/convertLyCodeAction.ts` | Code action to invoke `convert-ly` |
 | `src/completionProvider.ts` | Completions (loaded from `lilypond-words`) |
+| `src/formatter.ts` | Reindenting formatter; indentation as you type comes from `indentationRules` in `language-configuration.json` |
 | `syntaxes/` | TextMate grammars (LilyPond + embedded Scheme) |
 
 ## Testing notes
