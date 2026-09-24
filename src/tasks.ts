@@ -139,8 +139,9 @@ export function registerEngraveOnSave(context: vscode.ExtensionContext): void {
 		}
 	}
 
+	// Only the language server's errors count. The `$lilypond` problem matcher also reports errors against the file when an engrave fails, and those persist until the next engrave, so counting them would block the very run that clears them.
 	function hasErrors(uri: vscode.Uri): boolean {
-		return vscode.languages.getDiagnostics(uri).some(d => d.severity === vscode.DiagnosticSeverity.Error);
+		return vscode.languages.getDiagnostics(uri).some(d => d.source === 'ly-lsp' && d.severity === vscode.DiagnosticSeverity.Error);
 	}
 
 	async function runEngrave(uri: vscode.Uri): Promise<void> {
@@ -158,8 +159,7 @@ export function registerEngraveOnSave(context: vscode.ExtensionContext): void {
 		if (!enabled || !lastDefinition) {return;}
 		saveListener = vscode.workspace.onDidSaveTextDocument(async doc => {
 			if (doc.languageId !== 'lilypond') {return;}
-			// Building a file with errors just reproduces a diagnostic VS Code already
-			// shows inline, so skip it rather than clobbering the last good PDF.
+			// A file the language server already knows is broken would only fail to engrave, so skip it rather than clobbering the last good PDF.
 			if (hasErrors(doc.uri)) {return;}
 			// A save while our own engrave task is still running would otherwise launch
 			// a second task of the same kind, which VS Code resolves by prompting the
