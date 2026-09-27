@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { PdfViewerPanel } from './pdfViewer';
-import { findPdfForSource } from './outputPaths';
-import { PdfCustomEditorProvider } from './pdfCustomEditor';
+import { PdfCustomEditorProvider, showPdfPreviewFor } from './pdfCustomEditor';
 import { LilyPondInstallation } from './LilyPondInstallation';
 import { ConvertLyCodeActionProvider, registerConvertLyCommand } from './convertLyCodeAction';
 import { registerVersionDiagnostics } from './versionDiagnostics';
@@ -114,47 +112,25 @@ export function activate(context: vscode.ExtensionContext): { LilyPondInstallati
 	registerTaskProvider(context);
 	registerEngraveOnSave(context);
 
-	const taskEndListener = vscode.tasks.onDidEndTask(async (e) => {
-		if (e.execution.task.definition.type === 'lilypond') {
-			const editor = vscode.window.activeTextEditor;
-			if (editor && editor.document.languageId === 'lilypond') {
-				await checkAndOpenCorrespondingPdf(editor, context);
-			}
+	context.subscriptions.push(vscode.tasks.onDidEndTask(async (e) => {
+		const editor = vscode.window.activeTextEditor;
+		if (e.execution.task.definition.type === 'lilypond' && editor?.document.languageId === 'lilypond') {
+			await showPdfPreviewFor(editor);
 		}
-	});
+	}));
 
-	context.subscriptions.push(taskEndListener);
-
-	const textEditorChangeListener = vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-		if (editor && editor.document.languageId === 'lilypond') {
-			vscode.commands.executeCommand('setContext', 'lilypondFileOpen', true);
-			await checkAndOpenCorrespondingPdf(editor, context);
-		} else {
-			vscode.commands.executeCommand('setContext', 'lilypondFileOpen', false);
+	const onActiveEditorChanged = async (editor: vscode.TextEditor | undefined) => {
+		const isLilyPond = editor?.document.languageId === 'lilypond';
+		vscode.commands.executeCommand('setContext', 'lilypondFileOpen', isLilyPond);
+		if (isLilyPond) {
+			await showPdfPreviewFor(editor);
 		}
-	});
-
-	context.subscriptions.push(textEditorChangeListener);
-
-	if (vscode.window.activeTextEditor?.document.languageId === 'lilypond') {
-		vscode.commands.executeCommand('setContext', 'lilypondFileOpen', true);
-		checkAndOpenCorrespondingPdf(vscode.window.activeTextEditor, context);
-	}
+	};
+	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(onActiveEditorChanged));
+	onActiveEditorChanged(vscode.window.activeTextEditor);
 
 	// Return exports for testing access
 	return { LilyPondInstallation, languageClient };
-}
-
-async function checkAndOpenCorrespondingPdf(editor: vscode.TextEditor, context: vscode.ExtensionContext) {
-	const pdfPath = findPdfForSource(editor.document.uri);
-	if (pdfPath) {
-		await openPdfPreview(pdfPath, context, editor.document.uri);
-	}
-}
-
-async function openPdfPreview(pdfPath: string, context: vscode.ExtensionContext, sourceUri?: vscode.Uri) {
-	const pdfUri = vscode.Uri.file(pdfPath);
-	PdfViewerPanel.createOrShow(context.extensionUri, pdfUri, sourceUri);
 }
 
 export function deactivate(): Thenable<void> | undefined {

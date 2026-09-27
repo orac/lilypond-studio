@@ -2,9 +2,18 @@
  * It receives configuration via a data attribute.
  */
 
+import { parseTexteditUri, sourceFileKey, type TexteditTarget } from '../shared/texteditUri';
+import type { HostMessage, SourceRange, ViewerMessage } from '../shared/viewerMessages';
+
 declare function acquireVsCodeApi(): any;
 
-const vscode = acquireVsCodeApi();
+const vscodeApi = acquireVsCodeApi();
+
+const vscode = {
+	postMessage: (message: ViewerMessage) => vscodeApi.postMessage(message),
+	getState: () => vscodeApi.getState(),
+	setState: (state: unknown) => vscodeApi.setState(state),
+};
 
 /** Reports a failure to the extension host, which logs it and offers it to the user.
  *
@@ -74,18 +83,17 @@ class RenderCancelledError extends Error {
 	}
 }
 
-interface TexteditLink {
+/** A rendered point-and-click link. */
+interface TexteditLink extends TexteditTarget {
 	element: HTMLAnchorElement;
-	pageNum: number;
-	line: number;
-	charStart: number;
-	charEnd: number;
 }
 
 /** Stored annotation (link) data (zoom-independent) */
 interface StoredAnnotation {
 	rect: number[];
 	url: string;
+	/** Where the link points, if it is a point-and-click link. */
+	target: TexteditTarget | undefined;
 }
 
 interface StoredPage {
@@ -93,8 +101,8 @@ interface StoredPage {
 	annotations: StoredAnnotation[];
 }
 
-// Store all links with their positions for forward sync
-const linksByPosition = new Map<string, TexteditLink[]>();
+/** The rendered point-and-click links, keyed by the {@link sourceFileKey} of the file they point into. */
+const linksBySource = new Map<string, TexteditLink[]>();
 
 // Store loaded pages and annotations (populated by loadPdf, used by renderPages)
 let storedPages: StoredPage[] = [];
@@ -181,7 +189,8 @@ async function loadPdf() {
 				if (annotation.subtype === 'Link' && linkUrl) {
 					storedAnnotations.push({
 						rect: annotation.rect,
-						url: linkUrl
+						url: linkUrl,
+						target: parseTexteditUri(linkUrl),
 					});
 				}
 			}
@@ -194,6 +203,9 @@ async function loadPdf() {
 
 		// Now render the pages
 		await renderPages();
+
+		const sourceFiles = new Set(storedPages.flatMap(page => page.annotations.flatMap(annotation => annotation.target ? [annotation.target.filePath] : [])));
+		vscode.postMessage({ type: 'ready', sourceFiles: [...sourceFiles] });
 	} catch (error: any) {
 		if (error instanceof RenderCancelledError) {
 			return; // Silently ignore cancellation
@@ -218,7 +230,7 @@ async function renderPages() {
 
 	// Clear container and link map
 	container.innerHTML = '';
-	linksByPosition.clear();
+	linksBySource.clear();
 
 	// Get base viewport from first page to calculate scales
 	const baseViewport = storedPages[0].page.getViewport({ scale: 1.0 });
@@ -283,7 +295,7 @@ async function renderPages() {
 		linkLayer.style.height = viewport.height + 'px';
 
 		for (const annotation of annotations) {
-			const { rect, url: linkUrl } = annotation;
+			const { rect, url: linkUrl, target } = annotation;
 			const transform = viewport.transform;
 
 			// Convert PDF coordinates to viewport coordinates. Add a little extra height because the bboxes are quite tight.
@@ -299,51 +311,30 @@ async function renderPages() {
 			link.style.height = height + 'px';
 			link.href = '#';
 			link.title = linkUrl;
-			link.dataset.url = linkUrl;
-			link.dataset.pageNum = (pageNum + 1).toString();
+			linkLayer.appendChild(link);
+
+			if (!target) {
+				continue;
+			}
 
 			link.addEventListener('click', (e) => {
 				e.preventDefault();
-				vscode.postMessage({
-					type: 'click',
-					uri: linkUrl
-				});
+				vscode.postMessage({ type: 'click', target });
 			});
-
 			link.addEventListener('pointerenter', () => {
-				vscode.postMessage({
-					type: 'hover',
-					uri: linkUrl
-				});
+				vscode.postMessage({ type: 'hover', target });
 			});
-
 			link.addEventListener('pointerleave', () => {
-				vscode.postMessage({
-					type: 'unhover'
-				});
+				vscode.postMessage({ type: 'unhover' });
 			});
 
-			linkLayer.appendChild(link);
-
-			// Parse and store link position for forward sync
-			if (linkUrl.startsWith('textedit://')) {
-				try {
-					const parsed = parseTexteditUri(linkUrl);
-					if (parsed) {
-						const key = parsed.line + ':' + parsed.charStart;
-						if (!linksByPosition.has(key)) {
-							linksByPosition.set(key, []);
-						}
-						linksByPosition.get(key)!.push({
-							element: link,
-							pageNum: pageNum + 1,
-							...parsed
-						});
-					}
-				} catch {
-					// Ignore parsing errors
-				}
+			const key = sourceFileKey(target.filePath);
+			let links = linksBySource.get(key);
+			if (!links) {
+				links = [];
+				linksBySource.set(key, links);
 			}
+			links.push({ element: link, ...target });
 		}
 
 		pageDiv.appendChild(linkLayer);
@@ -351,102 +342,47 @@ async function renderPages() {
 	}
 }
 
-function parseTexteditUri(uri: string) {
-	// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
-	const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
-	if (!match) {
-		return null;
-	}
-
-	const [, , lineStr, charStartStr, charEndStr] = match;
-	const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
-	return { line, charStart, charEnd };
+/** The links nearest a cursor position: those starting closest to it on the same line. */
+function linksNearestPosition(links: TexteditLink[], line: number, char: number): TexteditLink[] {
+	const onLine = links.filter(link => link.line === line);
+	const distance = (link: TexteditLink) => Math.abs(link.charStart - char);
+	const nearest = Math.min(...onLine.map(distance));
+	return onLine.filter(link => distance(link) === nearest);
 }
 
-function highlightPosition(line: number, char: number) {
-	// Remove existing highlights
+/** The links starting within a selected range, inclusive at both ends. */
+function linksInRange(links: TexteditLink[], range: SourceRange): TexteditLink[] {
+	const afterStart = (link: TexteditLink) => link.line > range.startLine || (link.line === range.startLine && link.charStart >= range.startChar);
+	const beforeEnd = (link: TexteditLink) => link.line < range.endLine || (link.line === range.endLine && link.charStart <= range.endChar);
+	return links.filter(link => afterStart(link) && beforeEnd(link));
+}
+
+/** Highlights the notation for a cursor or selection in a source file, replacing any previous highlight.
+ *
+ * A bare cursor highlights the nearest link on its line, briefly; a selection highlights every link in it until the selection changes. A file this PDF has no links into clears the highlight.
+ */
+function highlightRange(range: SourceRange) {
 	document.querySelectorAll('.highlight').forEach(el => el.remove());
 
-	// Find links that match or are close to the position
-	const key = line + ':' + char;
-	let links = linksByPosition.get(key);
+	const links = linksBySource.get(sourceFileKey(range.filePath)) ?? [];
+	const isCursor = range.startLine === range.endLine && range.startChar === range.endChar;
+	const matching = isCursor ? linksNearestPosition(links, range.startLine, range.startChar) : linksInRange(links, range);
 
-	// If no exact match, find the closest link on the same line
-	if (!links || links.length === 0) {
-		const allLinks = [];
-		for (const [k, v] of linksByPosition.entries()) {
-			const [l, c] = k.split(':').map(Number);
-			if (l === line) {
-				allLinks.push(...v.map(link => ({ ...link, char: c })));
-			}
-		}
+	for (const { element: link } of matching) {
+		const highlight = document.createElement('div');
+		highlight.className = 'highlight';
+		highlight.style.left = link.style.left;
+		highlight.style.top = link.style.top;
+		highlight.style.width = link.style.width;
+		highlight.style.height = link.style.height;
+		link.parentElement?.appendChild(highlight);
 
-		if (allLinks.length > 0) {
-			// Find closest by character position
-			allLinks.sort((a, b) => Math.abs(a.char - char) - Math.abs(b.char - char));
-			links = [allLinks[0]];
-		}
-	}
-
-	if (links && links.length > 0) {
-		links.forEach(linkInfo => {
-			const link = linkInfo.element;
-			const highlight = document.createElement('div');
-			highlight.className = 'highlight';
-			highlight.style.left = link.style.left;
-			highlight.style.top = link.style.top;
-			highlight.style.width = link.style.width;
-			highlight.style.height = link.style.height;
-
-			link.parentElement?.appendChild(highlight);
-
-			// Fade out after 2 seconds
+		if (isCursor) {
 			setTimeout(() => {
 				highlight.style.opacity = '0';
 				setTimeout(() => highlight.remove(), 300);
 			}, 2000);
-		});
-	}
-}
-
-function highlightRange(startLine: number, startChar: number, endLine: number, endChar: number) {
-	// Remove existing highlights
-	document.querySelectorAll('.highlight').forEach(el => el.remove());
-
-	// If it's a single position (no actual range selected), use the simpler single-position logic
-	if (startLine === endLine && startChar === endChar) {
-		highlightPosition(startLine, startChar);
-		return;
-	}
-
-	// Find all links whose targets fall within the selected range
-	const matchingLinks = [];
-	for (const [key, links] of linksByPosition.entries()) {
-		const [linkLine, linkChar] = key.split(':').map(Number);
-
-		// Check if this link position is within the selection range
-		const isInRange = (linkLine > startLine || (linkLine === startLine && linkChar >= startChar)) &&
-			(linkLine < endLine || (linkLine === endLine && linkChar <= endChar));
-
-		if (isInRange) {
-			matchingLinks.push(...links);
 		}
-	}
-
-	// Highlight all matching links
-	if (matchingLinks.length > 0) {
-		matchingLinks.forEach(linkInfo => {
-			const link = linkInfo.element;
-			const highlight = document.createElement('div');
-			highlight.className = 'highlight';
-			highlight.style.left = link.style.left;
-			highlight.style.top = link.style.top;
-			highlight.style.width = link.style.width;
-			highlight.style.height = link.style.height;
-
-			link.parentElement?.appendChild(highlight);
-
-		});
 	}
 }
 
@@ -682,23 +618,12 @@ window.addEventListener('resize', () => {
 	}
 });
 
-/** The messages sent from the VSC side of the extension in pdfViewer.ts */
-type VsCodeMessage =
-	| { type: 'click'; uri: string }
-	| { type: 'hover'; uri: string }
-	| { type: 'unhover' }
-	| { type: 'sync'; startLine: number; startChar: number; endLine: number; endChar: number }
-	| { type: 'reload' };
-
 // Listen for sync messages from VS Code
-window.addEventListener('message', (event: MessageEvent<VsCodeMessage>) => {
+window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
 	const message = event.data;
 	switch (message.type) {
 		case 'sync':
-			if (message.startLine !== undefined && message.startChar !== undefined &&
-				message.endLine !== undefined && message.endChar !== undefined) {
-				highlightRange(message.startLine, message.startChar, message.endLine, message.endChar);
-			}
+			highlightRange(message.range);
 			break;
 		case 'reload':
 			// Disable scroll listener to prevent saving incorrect scroll positions during reload
@@ -709,7 +634,7 @@ window.addEventListener('message', (event: MessageEvent<VsCodeMessage>) => {
 			container.innerHTML = '';
 			loading.style.display = 'block';
 			loading.textContent = 'Loading PDF...';
-			linksByPosition.clear();
+			linksBySource.clear();
 			storedPages = [];
 			// Restore zoom state variables before rendering so loadPdf uses correct settings
 			const state = vscode.getState();
@@ -747,9 +672,6 @@ loadPdf().then(() => {
 	setTimeout(() => {
 		updateZoomDisplay();
 	}, 0);
-
-	// Notify extension that PDF is ready
-	vscode.postMessage({ type: 'ready' });
 }).catch((error) => {
 	if (!(error instanceof RenderCancelledError)) {
 		throw error;

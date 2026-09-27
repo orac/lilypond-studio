@@ -195,7 +195,12 @@
         ],
         "priority": "option"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "workbench.editor.autoLockGroups": {
+        "lilypondStudio.pdfPreview": true
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

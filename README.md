@@ -11,9 +11,10 @@ This is an extension to help you when editing LilyPond files in VS Code. It prov
     * Optional **engrave on save**
     * Problem parser gives you **red squiggles for LilyPond warnings and errors**
 * Side-by-side **PDF preview**, which auto-updates when the PDF changes
+    * Pin the preview tab to keep that PDF open while you work on other files, or use "Open With…" to view any PDF, such as one you're copying from
 * Supports LilyPond's **point-and-click** PDFs:
-    * Hovering/clicking an item in the PDF highlights/selects the relevant text in the .ly file.
-    * Your cursor or selection in the .ly file highlight the relevant notation in the PDF.
+    * Hovering/clicking an item in the PDF highlights/selects the relevant text in the .ly file, or whichever `\include`d file it came from.
+    * Your cursor or selection in any source file highlights the relevant notation in every open PDF.
 * Code actions and refactorings to:
     * Add the right `\version` to a new file, or run `convert-ly` to update an old file
     * Extract the selected music to a variable
@@ -36,7 +37,7 @@ I made this because I've been using Frescobaldi for years, but I want the full p
 - Open a .ly file.
 - Hit ctrl-shift-b to "run build task" and then choose "Engrave (Preview)" from the list. You can also set it as the default build task if you like.
     - Preview mode embeds point-and-click information in the generated PDF, so you can click on notes to go to the right place in the source file, and vice-versa. This makes the file much larger, and it gives away the path to the source file on your computer. When making a PDF to distribute or keep, use "Engrave (Publish)".
-- The PDF will automatically open next to the input file and update live whenever it is updated on disk.
+- The PDF will automatically open next to the input file and update live whenever it is updated on disk. It opens as a preview tab (with an italic title), so switching to another score replaces it, and switching to a file the PDF `\include`s keeps it. Double-click the tab to keep it open.
 - By default the PDF is written alongside the `.ly` file. To keep engraved output somewhere else, set `lilypondStudio.outputDirectory` (relative paths are relative to the source file, and `${workspaceFolder}` works). For different directories per set of build options, give an individual task in your `tasks.json` its own `outputDirectory`.
 - The build options come from the `lilypondStudio` settings — `outputDirectory`, `includeDirs`, and `commandOptions` for anything else you want on the command line. A task in your `tasks.json` can override any of them, so you can keep several build configurations side by side:
 

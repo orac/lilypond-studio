@@ -4,6 +4,11 @@
 
 - Adds a formatter, which reindents a file (or selection) by its nesting of `{ }`, `<< >>`, `#{ #}` and Scheme parentheses. It keeps the file's line breaks, and leaves lines starting inside block comments and multi-line strings alone.
 - Pressing Enter before a `}`, `>>` or `#}` moves it back out to the level of its opener, and a line that opens a `{` or `<<` without closing it indents the next line, even when there's music after the opener.
+- The PDF preview works with more than one file:
+    - It opens as a preview tab, which you can pin to keep that PDF open. You can have any number of PDFs open at once, each in its own tab.
+    - Point-and-click works with `\include`d files: clicking in the PDF opens whichever file the notation came from, and selecting text in any file highlights its notation in every open PDF.
+    - Switching to an `\include`d file no longer replaces the preview of the score that includes it.
+    - A tab group the preview opens is locked, so files you open from the explorer go to the group you were editing in. Turn this off with the `workbench.editor.autoLockGroups` setting.
 
 ## [1.0.1] - 2026-09-07
 

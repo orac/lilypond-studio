@@ -6,10 +6,11 @@
 			"DOM"
 		],
 		"types": [],
-		"rootDir": "."
+		"rootDir": ".."
 	},
 	"include": [
-		"."
+		".",
+		"../shared"
 	],
 	"exclude": [
 		"node_modules"

@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { log } from './log';
+import { sourceFileKey, type TexteditTarget } from './shared/texteditUri';
+import type { HostMessage, ViewerMessage } from './shared/viewerMessages';
 
 /** A self-contained page describing why the viewer could not start.
  *
@@ -35,330 +37,179 @@ function webviewOptions(extensionUri: vscode.Uri, pdfUri: vscode.Uri): vscode.We
 	};
 }
 
-/** Manages a PDF viewer webview panel */
+/** The editors, among those on screen, showing the source file `filePath`. */
+function visibleEditorsFor(filePath: string): vscode.TextEditor[] {
+	const key = sourceFileKey(filePath);
+	return vscode.window.visibleTextEditors.filter(editor => sourceFileKey(editor.document.uri.fsPath) === key);
+}
+
+/** Drives one PDF viewer webview: point-and-click in both directions, and reloading when the PDF changes.
+ *
+ * Each open PDF has its own, independent of the others. Point-and-click works with every source file the PDF has links into, not only the one it was engraved from, so selecting text in an `\include`d file highlights its notation too.
+ */
 export class PdfViewerPanel {
-	public static currentPanel: PdfViewerPanel | undefined;
+	/** Every viewer currently open. */
+	private static readonly all = new Set<PdfViewerPanel>();
 
 	/** The source `.ly` file behind the PDF preview, if that preview is the focused tab.
 	 *
 	 * Used so that a build task requested with the preview focused (shift+cmd+B on macOS, where a webview holds focus and `activeTextEditor` is undefined) still knows which file to engrave.
 	 */
 	public static get activeSourceUri(): vscode.Uri | undefined {
-		const current = PdfViewerPanel.currentPanel;
-		return current?.panel.active ? current.sourceUri : undefined;
+		return [...PdfViewerPanel.all].find(viewer => viewer.panel.active)?.sourceUri;
 	}
-	private readonly panel: vscode.WebviewPanel;
-	private readonly extensionUri: vscode.Uri;
-	private pdfUri: vscode.Uri;
-	private sourceUri: vscode.Uri | undefined;
-	private disposables: vscode.Disposable[] = [];
-	private editorChangeListener: vscode.Disposable | undefined;
+
+	/** Whether a PDF on screen already has point-and-click links into `sourceUri`. */
+	public static isSourceVisible(sourceUri: vscode.Uri): boolean {
+		const key = sourceFileKey(sourceUri.fsPath);
+		return [...PdfViewerPanel.all].some(viewer => viewer.panel.visible && viewer.sourceKeys.has(key));
+	}
+
+	/** The {@link sourceFileKey}s of the files this PDF's links point into, as reported by the webview once it has loaded. */
+	private sourceKeys = new Set<string>();
+	private readonly disposables: vscode.Disposable[] = [];
 	private hoverDecorationType: vscode.TextEditorDecorationType | undefined;
-	private fileWatcher: vscode.FileSystemWatcher | undefined;
 
-	public static createOrShowWithPanel(
-		extensionUri: vscode.Uri,
-		pdfUri: vscode.Uri,
-		existingPanel: vscode.WebviewPanel,
-		sourceUri?: vscode.Uri
+	/** Takes charge of `panel`, which must be showing nothing else, until the panel is disposed.
+	 *
+	 * @param sourceUri the score the PDF was engraved from, if known, which is what a build task run from the viewer engraves
+	 */
+	public constructor(
+		private readonly panel: vscode.WebviewPanel,
+		private readonly extensionUri: vscode.Uri,
+		private readonly pdfUri: vscode.Uri,
+		private readonly sourceUri: vscode.Uri | undefined,
 	) {
-		// Close any existing panel first
-		if (PdfViewerPanel.currentPanel) {
-			PdfViewerPanel.currentPanel.dispose();
-		}
-
-		// Set up the existing panel with our configuration
-		existingPanel.webview.options = webviewOptions(extensionUri, pdfUri);
-
-		existingPanel.title = path.basename(pdfUri.fsPath);
-
-		PdfViewerPanel.currentPanel = new PdfViewerPanel(existingPanel, extensionUri, pdfUri, sourceUri);
-	}
-
-	public static createOrShow(extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
-		const column = vscode.ViewColumn.Beside;
-
-		// If we already have a panel, show it and update the PDF
-		if (PdfViewerPanel.currentPanel) {
-			// Clear hover decoration when changing to a different file
-			PdfViewerPanel.currentPanel.clearHoverDecoration();
-
-			PdfViewerPanel.currentPanel.pdfUri = pdfUri;
-			PdfViewerPanel.currentPanel.sourceUri = sourceUri;
-
-			// Update localResourceRoots to include the new PDF directory
-			PdfViewerPanel.currentPanel.panel.webview.options = webviewOptions(extensionUri, pdfUri);
-
-			// Update panel title to show the new PDF filename
-			PdfViewerPanel.currentPanel.panel.title = path.basename(pdfUri.fsPath);
-
-			PdfViewerPanel.currentPanel.panel.reveal(column, true);
-			PdfViewerPanel.currentPanel.update();
-			PdfViewerPanel.currentPanel.setupEditorSync();
-			PdfViewerPanel.currentPanel.setupFileWatcher();
-			return;
-		}
-
-		// Otherwise, create a new panel
-		const panel = vscode.window.createWebviewPanel(
-			'lilypondPdfPreview',
-			path.basename(pdfUri.fsPath),
-			{ viewColumn: column, preserveFocus: true },
-			{
-				retainContextWhenHidden: true,
-				...webviewOptions(extensionUri, pdfUri),
-			}
-		);
-
-		PdfViewerPanel.currentPanel = new PdfViewerPanel(panel, extensionUri, pdfUri, sourceUri);
-	}
-
-	private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, pdfUri: vscode.Uri, sourceUri?: vscode.Uri) {
-		this.panel = panel;
-		this.extensionUri = extensionUri;
-		this.pdfUri = pdfUri;
-		this.sourceUri = sourceUri;
-
-		// Set the webview's initial html content
+		PdfViewerPanel.all.add(this);
+		this.panel.webview.options = webviewOptions(extensionUri, pdfUri);
 		this.update();
 
-		// Set up editor sync for forward navigation
-		this.setupEditorSync();
-
-		// Set up file watcher for PDF changes
-		this.setupFileWatcher();
-
-		// Listen for when the panel is disposed
-		// This happens when the user closes the panel or when the panel is closed programmatically
-		this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-
-		// Handle messages from the webview
-		this.panel.webview.onDidReceiveMessage(
-			message => {
-				switch (message.type) {
-					case 'click':
-						this.handlePdfClick(message.uri);
-						return;
-					case 'hover':
-						this.handlePdfHover(message.uri);
-						return;
-					case 'unhover':
-						this.clearHoverDecoration();
-						return;
-					case 'ready':
-						// PDF is loaded and ready for sync
-						this.syncCurrentPosition();
-						return;
-					case 'error':
-						log.error(`PDF viewer webview: ${message.message}`);
-						vscode.window.showErrorMessage(`PDF Viewer: ${message.message}`, 'Show Log')
-							.then(choice => {
-								if (choice === 'Show Log') {
-									log.show();
-								}
-							});
-						return;
-					case 'log':
-						log.debug(`PDF viewer webview: ${message.message}`);
-						return;
-				}
-			},
-			null,
-			this.disposables
+		this.disposables.push(
+			this.panel.onDidDispose(() => this.dispose()),
+			this.panel.webview.onDidReceiveMessage((message: ViewerMessage) => this.handleMessage(message)),
+			vscode.window.onDidChangeTextEditorSelection(e => this.syncSelection(e.textEditor)),
+			this.watchPdf(),
 		);
 	}
 
-	public dispose() {
-		PdfViewerPanel.currentPanel = undefined;
-
-		// Clean up hover decoration
+	private dispose() {
+		PdfViewerPanel.all.delete(this);
 		this.clearHoverDecoration();
-
-		// Clean up editor sync listener
-		if (this.editorChangeListener) {
-			this.editorChangeListener.dispose();
-			this.editorChangeListener = undefined;
-		}
-
-		// Clean up file watcher
-		if (this.fileWatcher) {
-			this.fileWatcher.dispose();
-			this.fileWatcher = undefined;
-		}
-
-		// Clean up our resources
-		this.panel.dispose();
-
-		while (this.disposables.length) {
-			const disposable = this.disposables.pop();
-			if (disposable) {
-				disposable.dispose();
-			}
+		for (const disposable of this.disposables) {
+			disposable.dispose();
 		}
 	}
 
-	/** Parse a textedit:// URI into its constituent parts
-	 * 
-	 * @return The parsed components, or null if parsing failed or `uri` is not a textedit:// URI
-	 */
-	private parseTexteditUri(uri: string): { filePath: string; line: number; charStart: number; charEnd: number } | null {
-		// Parse textedit:// URI format: textedit:///path/to/file.ly:line:char:char
-		if (!uri.startsWith('textedit://')) {
-			return null;
-		}
-
-		// Match the textedit:// URI format
-		// Captures: file path, line number, start char, end char
-		const match = uri.match(/^textedit:\/\/(.+):(\d+):(\d+):(\d+)$/);
-		if (!match) {
-			return null;
-		}
-
-		const [, encodedFilePath, lineStr, charStartStr, charEndStr] = match;
-
-		// Decode URL-encoded characters (like %20 for spaces)
-		const filePath = decodeURIComponent(encodedFilePath);
-		const [line, charStart, charEnd] = [lineStr, charStartStr, charEndStr].map(str => parseInt(str, 10));
-
-		return { filePath, line, charStart, charEnd };
+	private postMessage(message: HostMessage) {
+		this.panel.webview.postMessage(message);
 	}
 
-	/** Click handler for links in the PDF
-	 */
-	private async handlePdfClick(uri: string) {
-		const parsed = this.parseTexteditUri(uri);
-		if (!parsed) {
-			return;
+	private handleMessage(message: ViewerMessage) {
+		switch (message.type) {
+			case 'click':
+				this.handlePdfClick(message.target);
+				return;
+			case 'hover':
+				this.handlePdfHover(message.target);
+				return;
+			case 'unhover':
+				this.clearHoverDecoration();
+				return;
+			case 'ready':
+				this.sourceKeys = new Set(message.sourceFiles.map(sourceFileKey));
+				if (vscode.window.activeTextEditor) {
+					this.syncSelection(vscode.window.activeTextEditor);
+				}
+				return;
+			case 'error':
+				log.error(`PDF viewer webview: ${message.message}`);
+				vscode.window.showErrorMessage(`PDF Viewer: ${message.message}`, 'Show Log')
+					.then(choice => {
+						if (choice === 'Show Log') {
+							log.show();
+						}
+					});
+				return;
+			case 'log':
+				log.debug(`PDF viewer webview: ${message.message}`);
+				return;
 		}
+	}
 
+	/** Opens the source file a link in the PDF points to, with the linked item selected.
+	 *
+	 * An editor already showing the file is reused; otherwise it opens where the LilyPond source is being edited.
+	 */
+	private async handlePdfClick(target: TexteditTarget) {
 		try {
-			const { filePath, line, charStart, charEnd } = parsed;
+			const key = sourceFileKey(target.filePath);
+			// Reusing an open document matters on case-insensitive file systems, where the link may not spell the path the way VS Code does.
+			const uri = vscode.workspace.textDocuments.find(document => sourceFileKey(document.uri.fsPath) === key)?.uri ?? vscode.Uri.file(target.filePath);
+			const column = visibleEditorsFor(target.filePath)[0]?.viewColumn
+				?? vscode.window.visibleTextEditors.find(editor => editor.document.languageId === 'lilypond')?.viewColumn
+				?? vscode.ViewColumn.One;
+			const editor = await vscode.window.showTextDocument(uri, { viewColumn: column });
 
-			// Open the source file
-			const fileUri = vscode.Uri.file(filePath);
-			const document = await vscode.workspace.openTextDocument(fileUri);
-			const editor = await vscode.window.showTextDocument(document, vscode.ViewColumn.One);
-
-			// Move cursor to the position (LilyPond uses 1-based line numbers)
-			const startPosition = new vscode.Position(line - 1, charStart);
-			const endPosition = new vscode.Position(line - 1, charEnd);
-			editor.selection = new vscode.Selection(startPosition, endPosition);
-			editor.revealRange(
-				new vscode.Range(startPosition, endPosition),
-				vscode.TextEditorRevealType.Default
-			);
+			const range = this.targetRange(target);
+			editor.selection = new vscode.Selection(range.start, range.end);
+			editor.revealRange(range, vscode.TextEditorRevealType.Default);
 		} catch (error) {
-			vscode.window.showErrorMessage(`Failed to parse point-and-click URI: ${uri}`);
+			vscode.window.showErrorMessage(`Could not open ${target.filePath} at line ${target.line}`);
 			log.error('Point-and-click error', error);
 		}
 	}
 
-	/** Hover handler for links in the PDF
-	 * 
-	 * Adds a box around the link, and sends the link target to the source editor to add a decoration there.
-	 */
-	private async handlePdfHover(uri: string) {
-		const parsed = this.parseTexteditUri(uri);
-		if (!parsed) {
+	/** Highlights the item a hovered link points to, in every visible editor showing its file. */
+	private handlePdfHover(target: TexteditTarget) {
+		this.clearHoverDecoration();
+		const editors = visibleEditorsFor(target.filePath);
+		if (editors.length === 0) {
 			return;
 		}
-
-		try {
-			const { filePath, line, charStart, charEnd } = parsed;
-
-			// Check if this is the current source file
-			const fileUri = vscode.Uri.file(filePath);
-			const editor = vscode.window.activeTextEditor;
-
-			if (!editor || editor.document.uri.fsPath !== fileUri.fsPath) {
-				return;
-			}
-
-			// Clear any existing hover decoration
-			this.clearHoverDecoration();
-
-			// Create the hover decoration type
-			this.hoverDecorationType = vscode.window.createTextEditorDecorationType({
-				backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
-				border: '1px solid',
-				borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder'),
-			});
-
-			// Apply the decoration (LilyPond uses 1-based line numbers)
-			const startPosition = new vscode.Position(line - 1, charStart);
-			const endPosition = new vscode.Position(line - 1, charEnd);
-			editor.setDecorations(this.hoverDecorationType, [new vscode.Range(startPosition, endPosition)]);
-		} catch (error) {
-			log.error('Hover decoration error', error);
+		this.hoverDecorationType = vscode.window.createTextEditorDecorationType({
+			backgroundColor: new vscode.ThemeColor('editor.findMatchHighlightBackground'),
+			border: '1px solid',
+			borderColor: new vscode.ThemeColor('editor.findMatchHighlightBorder'),
+		});
+		for (const editor of editors) {
+			editor.setDecorations(this.hoverDecorationType, [this.targetRange(target)]);
 		}
+	}
+
+	private targetRange(target: TexteditTarget): vscode.Range {
+		// LilyPond's lines are 1-based.
+		return new vscode.Range(target.line - 1, target.charStart, target.line - 1, target.charEnd);
 	}
 
 	private clearHoverDecoration() {
-		if (this.hoverDecorationType) {
-			this.hoverDecorationType.dispose();
-			this.hoverDecorationType = undefined;
-		}
+		this.hoverDecorationType?.dispose();
+		this.hoverDecorationType = undefined;
 	}
 
-	/** Sets a listener for selection changes in the editor to sync the highlighting in the PDF */
-	private setupEditorSync() {
-		// Clean up existing listener
-		if (this.editorChangeListener) {
-			this.editorChangeListener.dispose();
-		}
-
-		// Listen to selection changes in the editor
-		this.editorChangeListener = vscode.window.onDidChangeTextEditorSelection(e => {
-			// Only sync if the active editor is the source file
-			if (this.sourceUri && e.textEditor.document.uri.fsPath === this.sourceUri.fsPath) {
-				this.syncCurrentPosition();
-			}
-		});
-	}
-
-	/** Sends a source file selection from the source editor to the webview */
-	private syncCurrentPosition() {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor || !this.sourceUri || editor.document.uri.fsPath !== this.sourceUri.fsPath) {
+	/** Highlights the notation for `editor`'s selection, if this PDF has links into its file. */
+	private syncSelection(editor: vscode.TextEditor) {
+		const filePath = editor.document.uri.fsPath;
+		if (!this.sourceKeys.has(sourceFileKey(filePath))) {
 			return;
 		}
-
-		const selection = editor.selection;
-		const startLine = selection.start.line + 1; // Convert to 1-based
-		const startChar = selection.start.character;
-		const endLine = selection.end.line + 1; // Convert to 1-based
-		const endChar = selection.end.character;
-
-		// Send sync message to webview with full range
-		this.panel.webview.postMessage({
+		const { start, end } = editor.selection;
+		this.postMessage({
 			type: 'sync',
-			startLine: startLine,
-			startChar: startChar,
-			endLine: endLine,
-			endChar: endChar
+			range: {
+				filePath,
+				startLine: start.line + 1,
+				startChar: start.character,
+				endLine: end.line + 1,
+				endChar: end.character,
+			},
 		});
 	}
 
-	private setupFileWatcher() {
-		// Clean up existing watcher
-		if (this.fileWatcher) {
-			this.fileWatcher.dispose();
-		}
-
-		// Create a file watcher for the PDF file
-		const pattern = new vscode.RelativePattern(this.pdfUri, '*');
-		this.fileWatcher = vscode.workspace.createFileSystemWatcher(pattern);
-
-		// Reload the PDF when it changes
-		this.fileWatcher.onDidChange(() => {
-			// Send reload message to webview
-			this.panel.webview.postMessage({ type: 'reload' });
-		});
-
-		// Handle file deletion
-		this.fileWatcher.onDidDelete(() => {
-			vscode.window.showWarningMessage('PDF file was deleted');
-		});
+	private watchPdf(): vscode.Disposable {
+		const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(path.dirname(this.pdfUri.fsPath)), path.basename(this.pdfUri.fsPath)));
+		watcher.onDidChange(() => this.postMessage({ type: 'reload' }));
+		watcher.onDidDelete(() => vscode.window.showWarningMessage(`${path.basename(this.pdfUri.fsPath)} was deleted`));
+		return watcher;
 	}
 
 	/** Renders the viewer into the panel.

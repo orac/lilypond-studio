@@ -52,8 +52,9 @@ The build is orchestrated by `esbuild.js`, which bundles both targets; it accept
 | `src/diagnosticsCommand.ts` | "LilyPond: Show Diagnostics" environment report for bug reports |
 | `src/languageClient.ts` | LSP client lifecycle |
 | `src/LilyPondInstallation.ts` | Detects LilyPond on the user's system |
-| `src/pdfViewer.ts` | Webview panel management |
-| `src/pdfCustomEditor.ts` | Custom editor provider for `.pdf` files |
+| `src/pdfViewer.ts` | Host side of each PDF viewer webview: point-and-click, reloading |
+| `src/pdfCustomEditor.ts` | Custom editor provider for `.pdf` files, which every preview opens through; follows the active `.ly` file |
+| `src/shared/` | Code bundled into both the extension host and the viewer webview: `textedit://` parsing, the message protocol |
 | `src/versionDiagnostics.ts` | Detects outdated `\version` directives |
 | `src/convertLyCodeAction.ts` | Code action to invoke `convert-ly` |
 | `src/completionProvider.ts` | Completions (loaded from `lilypond-words`) |
