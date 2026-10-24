@@ -626,10 +626,12 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
 			highlightRange(message.range);
 			break;
 		case 'reload':
+			// Save current state before clearing, unless a reload is already under way: the page is empty then, so its scroll position is meaningless
+			if (scrollListenerEnabled) {
+				saveState();
+			}
 			// Disable scroll listener to prevent saving incorrect scroll positions during reload
 			scrollListenerEnabled = false;
-			// Save current state before clearing
-			saveState();
 			// Clear the container and reload the PDF
 			container.innerHTML = '';
 			loading.style.display = 'block';

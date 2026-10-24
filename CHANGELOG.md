@@ -9,6 +9,7 @@
     - Point-and-click works with `\include`d files: clicking in the PDF opens whichever file the notation came from, and selecting text in any file highlights its notation in every open PDF.
     - Switching to an `\include`d file no longer replaces the preview of the score that includes it.
     - A tab group the preview opens is locked, so files you open from the explorer go to the group you were editing in. Turn this off with the `workbench.editor.autoLockGroups` setting.
+- The PDF preview reloads reliably after an engrave, and keeps its scroll position. LilyPond replaces the PDF rather than rewriting it, which the preview sometimes missed, and one engrave could reload the preview twice and lose its place.
 
 ## [1.0.1] - 2026-09-07
 
