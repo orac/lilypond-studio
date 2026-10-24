@@ -384,6 +384,23 @@ function highlightRange(range: SourceRange) {
 			}, 2000);
 		}
 	}
+
+	scrollIntoViewIfHidden(document.querySelector<HTMLElement>('.highlight'));
+}
+
+/** Scrolls the viewer to centre `element`, unless it's already wholly on screen.
+ *
+ * Leaving visible notation where it is keeps the PDF still while you type, and when you click in it: point-and-click moves the cursor, which highlights what you clicked.
+ */
+function scrollIntoViewIfHidden(element: HTMLElement | null) {
+	if (!element) {
+		return;
+	}
+	const bounds = element.getBoundingClientRect();
+	const visible = container.getBoundingClientRect();
+	if (bounds.top < visible.top || bounds.bottom > visible.bottom || bounds.left < visible.left || bounds.right > visible.right) {
+		element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+	}
 }
 
 // Zoom functions
