@@ -205,11 +205,30 @@ export class PdfViewerPanel {
 		});
 	}
 
+	/** Reloads the viewer whenever the PDF is rewritten.
+	 *
+	 * LilyPond doesn't rewrite the PDF in place: it writes a new file and renames it over the old one, which the watcher can report as a create (or a delete then a create) rather than a change. One engrave can also raise several events in a row, so they're coalesced into a single reload; reloading again while the first is still loading would save the empty page's scroll position over the real one. A delete only warns if no new PDF arrives soon after it.
+	 */
 	private watchPdf(): vscode.Disposable {
 		const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(path.dirname(this.pdfUri.fsPath)), path.basename(this.pdfUri.fsPath)));
-		watcher.onDidChange(() => this.postMessage({ type: 'reload' }));
-		watcher.onDidDelete(() => vscode.window.showWarningMessage(`${path.basename(this.pdfUri.fsPath)} was deleted`));
-		return watcher;
+		let reloadTimer: NodeJS.Timeout | undefined;
+		let deleteTimer: NodeJS.Timeout | undefined;
+		const scheduleReload = () => {
+			clearTimeout(deleteTimer);
+			clearTimeout(reloadTimer);
+			reloadTimer = setTimeout(() => this.postMessage({ type: 'reload' }), 300);
+		};
+		watcher.onDidChange(scheduleReload);
+		watcher.onDidCreate(scheduleReload);
+		watcher.onDidDelete(() => {
+			clearTimeout(deleteTimer);
+			deleteTimer = setTimeout(() => vscode.window.showWarningMessage(`${path.basename(this.pdfUri.fsPath)} was deleted`), 2000);
+		});
+		return new vscode.Disposable(() => {
+			clearTimeout(reloadTimer);
+			clearTimeout(deleteTimer);
+			watcher.dispose();
+		});
 	}
 
 	/** Renders the viewer into the panel.
