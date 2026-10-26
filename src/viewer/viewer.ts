@@ -210,6 +210,8 @@ async function loadPdf() {
 		if (error instanceof RenderCancelledError) {
 			return; // Silently ignore cancellation
 		}
+		// A reload leaves the previous pages up rather than showing the loading message, so the message has to be shown again here
+		loading.style.display = 'block';
 		loading.textContent = 'Error loading PDF: ' + error.message;
 		loading.innerHTML += '<br><br>See the LilyPond Studio output channel (View &gt; Output) for details.';
 		reportError('Error loading PDF', error);
@@ -228,9 +230,9 @@ async function renderPages() {
 	// Increment render ID to cancel any in-progress renders
 	const renderId = ++currentRenderId;
 
-	// Clear container and link map
-	container.innerHTML = '';
+	// Clear the link map. The pages are built off screen and swapped in at the end, so the old ones stay up until then: emptying the container first would scroll the view back to the top and flash it there while rendering.
 	linksBySource.clear();
+	const pages = document.createDocumentFragment();
 
 	// Get base viewport from first page to calculate scales
 	const baseViewport = storedPages[0].page.getViewport({ scale: 1.0 });
@@ -338,8 +340,10 @@ async function renderPages() {
 		}
 
 		pageDiv.appendChild(linkLayer);
-		container.appendChild(pageDiv);
+		pages.appendChild(pageDiv);
 	}
+
+	container.replaceChildren(pages);
 }
 
 /** The links nearest a cursor position: those starting closest to it on the same line. */
@@ -424,16 +428,35 @@ function setZoom100() {
 	setZoom(ACTUAL_SIZE_SCALE, ZoomMode.Custom);
 }
 
-/** Redraws the loaded PDF into the canvas to reflect updated zoom settings */
+/** Where the middle of the view was before a re-render, as fractions of the scrollable size, so it can be put back at the new scale. */
+let reRenderAnchor: { x: number; y: number } | undefined;
+
+/** Redraws the loaded PDF into the canvas to reflect updated zoom settings, keeping the middle of the view where it was */
 function reRenderPdf() {
-	// Save state first to preserve the new zoom settings
-	saveState();
+	// Ignore scroll events until the new pages are in place: swapping them in moves the scroll position before it's restored
+	scrollListenerEnabled = false;
+	// If a render is already pending, keep its anchor: the container may be showing a half-finished render now
+	reRenderAnchor ??= {
+		x: container.scrollWidth > 0 ? (container.scrollLeft + container.clientWidth / 2) / container.scrollWidth : 0,
+		y: container.scrollHeight > 0 ? (container.scrollTop + container.clientHeight / 2) / container.scrollHeight : 0,
+	};
 	// Re-render with new scale (no need to reload PDF)
 	renderPages().then(() => {
-		// Restore only scroll position (zoom settings were already saved above)
-		restoreState();
+		const anchor = reRenderAnchor;
+		reRenderAnchor = undefined;
+		if (anchor) {
+			container.scrollLeft = anchor.x * container.scrollWidth - container.clientWidth / 2;
+			container.scrollTop = anchor.y * container.scrollHeight - container.clientHeight / 2;
+		}
+		// Save the new zoom settings and position once the scroll events from restoring it have passed
+		setTimeout(() => {
+			scrollListenerEnabled = true;
+			saveState();
+		}, 0);
 	}).catch((error) => {
 		if (!(error instanceof RenderCancelledError)) {
+			reRenderAnchor = undefined;
+			scrollListenerEnabled = true;
 			throw error;
 		}
 	});
@@ -626,16 +649,13 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
 			highlightRange(message.range);
 			break;
 		case 'reload':
-			// Save current state before clearing, unless a reload is already under way: the page is empty then, so its scroll position is meaningless
+			// Save current state, unless a reload is already under way: the position it saved is the one to go back to
 			if (scrollListenerEnabled) {
 				saveState();
 			}
 			// Disable scroll listener to prevent saving incorrect scroll positions during reload
 			scrollListenerEnabled = false;
-			// Clear the container and reload the PDF
-			container.innerHTML = '';
-			loading.style.display = 'block';
-			loading.textContent = 'Loading PDF...';
+			// Reload the PDF, leaving the old pages on screen until renderPages replaces them
 			linksBySource.clear();
 			storedPages = [];
 			// Restore zoom state variables before rendering so loadPdf uses correct settings
