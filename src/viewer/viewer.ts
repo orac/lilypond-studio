@@ -45,6 +45,7 @@ const container = document.getElementById('pdf-container')!;
 const loading = document.getElementById('loading')!;
 const zoomLevelDisplay = document.getElementById('zoom-level')!;
 const zoomControls = document.getElementById('zoom-controls')!;
+const followCursorCheckbox = document.getElementById('follow-cursor') as HTMLElement & { checked: boolean };
 
 log(`Webview loaded, PDF URL: ${config.pdfUrl}`);
 
@@ -385,7 +386,9 @@ function highlightRange(range: SourceRange) {
 		}
 	}
 
-	scrollIntoViewIfHidden(document.querySelector<HTMLElement>('.highlight'));
+	if (followCursorCheckbox.checked) {
+		scrollIntoViewIfHidden(document.querySelector<HTMLElement>('.highlight'));
+	}
 }
 
 /** Scrolls the viewer to centre `element`, unless it's already wholly on screen.
@@ -462,7 +465,8 @@ function saveState() {
 		scrollTop: container.scrollTop,
 		scrollLeft: container.scrollLeft,
 		scale: currentScale,
-		zoomMode: currentZoomMode
+		zoomMode: currentZoomMode,
+		followCursor: followCursorCheckbox.checked,
 	};
 	vscode.setState(state);
 }
@@ -484,6 +488,10 @@ function restoreState() {
 		}
 	}
 }
+
+// The follow-cursor checkbox is on unless it was turned off in this preview before, e.g. before VS Code restarted
+followCursorCheckbox.checked = vscode.getState()?.followCursor ?? true;
+followCursorCheckbox.addEventListener('change', () => saveState());
 
 // Save state on scroll
 let scrollListenerEnabled = true;
