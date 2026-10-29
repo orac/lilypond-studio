@@ -491,7 +491,16 @@ function restoreState() {
 
 // The follow-cursor checkbox is on unless it was turned off in this preview before, e.g. before VS Code restarted
 followCursorCheckbox.checked = vscode.getState()?.followCursor ?? true;
-followCursorCheckbox.addEventListener('change', () => saveState());
+
+/** The cursor or selection most recently synced from a source file, so ticking the checkbox can catch up with where you are now. */
+let lastSyncedRange: SourceRange | undefined;
+
+followCursorCheckbox.addEventListener('change', () => {
+	saveState();
+	if (followCursorCheckbox.checked && lastSyncedRange) {
+		highlightRange(lastSyncedRange);
+	}
+});
 
 // Save state on scroll
 let scrollListenerEnabled = true;
@@ -648,6 +657,7 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
 	const message = event.data;
 	switch (message.type) {
 		case 'sync':
+			lastSyncedRange = message.range;
 			highlightRange(message.range);
 			break;
 		case 'reload':
