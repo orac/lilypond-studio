@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [1.1.0] - 2026-11-21
 
 - Adds a formatter, which reindents a file (or selection) by its nesting of `{ }`, `<< >>`, `#{ #}` and Scheme parentheses. It keeps the file's line breaks, and leaves lines starting inside block comments and multi-line strings alone.
 - Pressing Enter before a `}`, `>>` or `#}` moves it back out to the level of its opener, and a line that opens a `{` or `<<` without closing it indents the next line, even when there's music after the opener.
