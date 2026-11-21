@@ -45,6 +45,7 @@ const container = document.getElementById('pdf-container')!;
 const loading = document.getElementById('loading')!;
 const zoomLevelDisplay = document.getElementById('zoom-level')!;
 const zoomControls = document.getElementById('zoom-controls')!;
+const followCursorCheckbox = document.getElementById('follow-cursor') as HTMLElement & { checked: boolean };
 
 log(`Webview loaded, PDF URL: ${config.pdfUrl}`);
 
@@ -388,6 +389,25 @@ function highlightRange(range: SourceRange) {
 			}, 2000);
 		}
 	}
+
+	if (followCursorCheckbox.checked) {
+		scrollIntoViewIfHidden(document.querySelector<HTMLElement>('.highlight'));
+	}
+}
+
+/** Scrolls the viewer to centre `element`, unless it's already wholly on screen.
+ *
+ * Leaving visible notation where it is keeps the PDF still while you type, and when you click in it: point-and-click moves the cursor, which highlights what you clicked.
+ */
+function scrollIntoViewIfHidden(element: HTMLElement | null) {
+	if (!element) {
+		return;
+	}
+	const bounds = element.getBoundingClientRect();
+	const visible = container.getBoundingClientRect();
+	if (bounds.top < visible.top || bounds.bottom > visible.bottom || bounds.left < visible.left || bounds.right > visible.right) {
+		element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+	}
 }
 
 // Zoom functions
@@ -468,7 +488,8 @@ function saveState() {
 		scrollTop: container.scrollTop,
 		scrollLeft: container.scrollLeft,
 		scale: currentScale,
-		zoomMode: currentZoomMode
+		zoomMode: currentZoomMode,
+		followCursor: followCursorCheckbox.checked,
 	};
 	vscode.setState(state);
 }
@@ -490,6 +511,19 @@ function restoreState() {
 		}
 	}
 }
+
+// The follow-cursor checkbox is on unless it was turned off in this preview before, e.g. before VS Code restarted
+followCursorCheckbox.checked = vscode.getState()?.followCursor ?? true;
+
+/** The cursor or selection most recently synced from a source file, so ticking the checkbox can catch up with where you are now. */
+let lastSyncedRange: SourceRange | undefined;
+
+followCursorCheckbox.addEventListener('change', () => {
+	saveState();
+	if (followCursorCheckbox.checked && lastSyncedRange) {
+		highlightRange(lastSyncedRange);
+	}
+});
 
 // Save state on scroll
 let scrollListenerEnabled = true;
@@ -646,6 +680,7 @@ window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
 	const message = event.data;
 	switch (message.type) {
 		case 'sync':
+			lastSyncedRange = message.range;
 			highlightRange(message.range);
 			break;
 		case 'reload':
