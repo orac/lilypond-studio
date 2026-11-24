@@ -157,11 +157,36 @@ async function startPdfWorker(): Promise<any> {
 	return new pdfjsLib.PDFWorker({ port: new Worker(blobUrl, { type: 'module' }) });
 }
 
-/**
- * Loads the PDF document and extracts annotations.
- * Called on initial load and when the PDF file changes.
+/** How many documents loadPdf has started to open, so a load can tell when a newer one has overtaken it. */
+let documentsOpened = 0;
+
+/** The documents loadPdf has opened and not yet destroyed, by the order they were opened in. */
+const openDocuments = new Map<number, any>();
+
+/** Destroys the documents opened before `documentNumber`, freeing what pdf.js holds for them in the webview and its worker.
+ *
+ * Call it once the pages of document `documentNumber` have replaced theirs on screen: renderPages has by then cancelled any drawing of the old pages, and the canvases already drawn don't need their document.
+ */
+function destroyDocumentsBefore(documentNumber: number) {
+	for (const [number, document] of openDocuments) {
+		if (number < documentNumber) {
+			openDocuments.delete(number);
+			void document.destroy();
+		}
+	}
+}
+
+/** Loads the PDF document and extracts annotations. Called on initial load and when the PDF file changes.
+ *
+ * Destroys the previous document once the new one is on screen. A load that a newer one overtakes gives up, destroying its own document.
  */
 async function loadPdf() {
+	const documentNumber = ++documentsOpened;
+	const throwIfOvertaken = () => {
+		if (documentNumber !== documentsOpened) {
+			throw new RenderCancelledError();
+		}
+	};
 	try {
 		pdfjsLib = await import(config.pdfjsUri);
 
@@ -172,16 +197,19 @@ async function loadPdf() {
 			return undefined;
 		});
 
+		const started = performance.now();
 		const loadingTask = pdfjsLib.getDocument({ url: config.pdfUrl, worker: await pdfWorkerPromise });
 		const pdf = await loadingTask.promise;
+		openDocuments.set(documentNumber, pdf);
+		throwIfOvertaken();
+		const opened = performance.now();
 
-		pdfDocument = pdf;
-		storedPages = [];
-
-		// Load all pages and their annotations
+		// Load all pages and their annotations, into a list of this load's own so that one overtaken part way through can't mix its pages into the newer one's
+		const pages: StoredPage[] = [];
 		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
 			const page = await pdf.getPage(pageNum);
 			const annotations = await page.getAnnotations();
+			throwIfOvertaken();
 
 			// Extract only the link annotations we care about
 			const storedAnnotations: StoredAnnotation[] = [];
@@ -196,20 +224,34 @@ async function loadPdf() {
 				}
 			}
 
-			storedPages.push({ page, annotations: storedAnnotations });
+			pages.push({ page, annotations: storedAnnotations });
 		}
+
+		pdfDocument = pdf;
+		storedPages = pages;
+		const pagesRead = performance.now();
 
 		loading.style.display = 'none';
 		zoomControls.style.display = 'flex';
 
 		// Now render the pages
 		await renderPages();
+		destroyDocumentsBefore(documentNumber);
+
+		const shown = performance.now();
+		const drawnBeforeShowing = container.querySelectorAll('canvas[width]').length;
+		log(`Showed the PDF ${Math.round(shown - started)} ms after starting to load it: ${Math.round(opened - started)} ms to open it, ${Math.round(pagesRead - opened)} ms to read its ${pdf.numPages} pages and their links, ${Math.round(shown - pagesRead)} ms to lay them out and draw the ${drawnBeforeShowing} in view`);
 
 		const sourceFiles = new Set(storedPages.flatMap(page => page.annotations.flatMap(annotation => annotation.target ? [annotation.target.filePath] : [])));
 		vscode.postMessage({ type: 'ready', sourceFiles: [...sourceFiles] });
 	} catch (error: any) {
 		if (error instanceof RenderCancelledError) {
-			return; // Silently ignore cancellation
+			// A newer load has taken over, so this one's document will never be shown
+			if (documentNumber !== documentsOpened) {
+				void openDocuments.get(documentNumber)?.destroy();
+				openDocuments.delete(documentNumber);
+			}
+			return;
 		}
 		// A reload leaves the previous pages up rather than showing the loading message, so the message has to be shown again here
 		loading.style.display = 'block';
@@ -219,9 +261,67 @@ async function loadPdf() {
 	}
 }
 
-/**
- * Renders all pages at the current scale.
- * Called after loadPdf and on zoom/resize changes.
+/** A page laid out in the viewer whose canvas may not have been drawn yet. */
+interface LaidOutPage {
+	page: any; // PDF.js page object
+	canvas: HTMLCanvasElement;
+	/** The viewport to draw at, scaled up by the device pixel ratio. */
+	scaledViewport: any;
+	/** Whether drawing it has started. */
+	drawn: boolean;
+}
+
+/** Draws pages that weren't drawn before the last render was swapped in, as they come near the view. Each render replaces it. */
+let lazyPageObserver: IntersectionObserver | undefined;
+
+/** The pdf.js render tasks under way, which a new render cancels: their canvases are about to be replaced. */
+const activeRenderTasks = new Set<any>();
+
+/** Draws a laid-out page into its canvas, unless that has already started.
+ *
+ * The canvas's bitmap is sized only here, so a page that is never drawn doesn't hold one.
+ */
+async function drawPage(laidOut: LaidOutPage, renderId: number) {
+	if (laidOut.drawn) {
+		return;
+	}
+	laidOut.drawn = true;
+	const { page, canvas, scaledViewport } = laidOut;
+	canvas.width = scaledViewport.width;
+	canvas.height = scaledViewport.height;
+	const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport });
+	activeRenderTasks.add(task);
+	try {
+		await task.promise;
+	} catch (error: any) {
+		if (error?.name === 'RenderingCancelledException') {
+			throw new RenderCancelledError();
+		}
+		throw error;
+	} finally {
+		activeRenderTasks.delete(task);
+	}
+	if (renderId !== currentRenderId) {
+		throw new RenderCancelledError();
+	}
+}
+
+/** The indices of the pages now in the viewer that are at least partly in view. */
+function visiblePageIndices(): number[] {
+	const view = container.getBoundingClientRect();
+	const indices: number[] = [];
+	container.querySelectorAll('.pdf-page').forEach((pageElement, index) => {
+		const bounds = pageElement.getBoundingClientRect();
+		if (bounds.bottom > view.top && bounds.top < view.bottom) {
+			indices.push(index);
+		}
+	});
+	return indices;
+}
+
+/** Lays out all pages at the current scale, and draws the ones in view. Called after loadPdf and on zoom/resize changes.
+ *
+ * Drawing a page is by far the slowest part, so only the pages that were in view, and one either side, are drawn before the new pages are swapped in; the rest are drawn as they are scrolled near. Every page is laid out at its full size straight away, so scroll positions and point-and-click links work across the whole document.
  */
 async function renderPages() {
 	if (storedPages.length === 0) {
@@ -230,6 +330,18 @@ async function renderPages() {
 
 	// Increment render ID to cancel any in-progress renders
 	const renderId = ++currentRenderId;
+	// Stop drawing the previous render's pages: they are about to be replaced
+	lazyPageObserver?.disconnect();
+	lazyPageObserver = undefined;
+	for (const task of activeRenderTasks) {
+		task.cancel();
+	}
+
+	// The pages to draw before swapping in: the ones in view now, and one either side, since the new pages are laid out where the old ones were. On first load nothing is in view, so nothing holds up the swap.
+	const visible = visiblePageIndices();
+	const firstToDraw = visible.length > 0 ? Math.max(0, Math.min(...visible) - 1) : 0;
+	const lastToDraw = visible.length > 0 ? Math.min(storedPages.length - 1, Math.max(...visible) + 1) : -1;
+	const laidOutPages: LaidOutPage[] = [];
 
 	// Clear the link map. The pages are built off screen and swapped in at the end, so the old ones stay up until then: emptying the container first would scroll the view back to the top and flash it there while rendering.
 	linksBySource.clear();
@@ -253,12 +365,8 @@ async function renderPages() {
 	// Get device pixel ratio for high-DPI rendering
 	const dpr = window.devicePixelRatio || 1;
 
-	// Render each page
+	// Lay out each page, without drawing it yet
 	for (let pageNum = 0; pageNum < storedPages.length; pageNum++) {
-		if (renderId !== currentRenderId) {
-			throw new RenderCancelledError();
-		}
-
 		const { page, annotations } = storedPages[pageNum];
 
 		// Calculate scale for comfortable viewing
@@ -270,24 +378,11 @@ async function renderPages() {
 		const pageDiv = document.createElement('div');
 		pageDiv.className = 'pdf-page';
 
-		// Create canvas for rendering
+		// Create the canvas at its logical size; drawPage sizes its bitmap at the scaled dimensions for sharp rendering
 		const canvas = document.createElement('canvas');
-		const context = canvas.getContext('2d');
-		// Set canvas bitmap size to scaled dimensions for sharp rendering
-		canvas.width = scaledViewport.width;
-		canvas.height = scaledViewport.height;
-		// Set CSS size to logical dimensions
 		canvas.style.width = viewport.width + 'px';
 		canvas.style.height = viewport.height + 'px';
-
-		// Render PDF page at scaled resolution
-		await page.render({
-			canvasContext: context,
-			viewport: scaledViewport
-		}).promise;
-		if (renderId !== currentRenderId) {
-			throw new RenderCancelledError();
-		}
+		laidOutPages.push({ page, canvas, scaledViewport, drawn: false });
 
 		pageDiv.appendChild(canvas);
 
@@ -344,7 +439,37 @@ async function renderPages() {
 		pages.appendChild(pageDiv);
 	}
 
+	// Draw the pages that will be in view before swapping in, so the view doesn't show blank pages in place of the old ones
+	for (let pageNum = firstToDraw; pageNum <= lastToDraw; pageNum++) {
+		await drawPage(laidOutPages[pageNum], renderId);
+	}
+
 	container.replaceChildren(pages);
+
+	// Draw the rest as they come within a screenful of the view
+	const pageByElement = new Map<Element, LaidOutPage>();
+	const observer = new IntersectionObserver(entries => {
+		for (const entry of entries) {
+			const laidOut = pageByElement.get(entry.target);
+			if (!entry.isIntersecting || !laidOut) {
+				continue;
+			}
+			observer.unobserve(entry.target);
+			drawPage(laidOut, renderId).catch(error => {
+				if (!(error instanceof RenderCancelledError)) {
+					reportError('Error drawing PDF page', error);
+				}
+			});
+		}
+	}, { root: container, rootMargin: '100% 0px' });
+	for (const laidOut of laidOutPages) {
+		const pageDiv = laidOut.canvas.parentElement;
+		if (!laidOut.drawn && pageDiv) {
+			pageByElement.set(pageDiv, laidOut);
+			observer.observe(pageDiv);
+		}
+	}
+	lazyPageObserver = observer;
 }
 
 /** The links nearest a cursor position: those starting closest to it on the same line. */

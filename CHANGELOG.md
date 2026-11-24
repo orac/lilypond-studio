@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The PDF preview no longer gets slower the longer you work. It kept every version of the PDF it had shown in memory, so after many engraves it could take 10 seconds or more to show the new one; now it lets each old one go once the new one is on screen.
+- The PDF preview shows a new engrave sooner: it draws the pages in view first, then each of the rest as you scroll near it.
+- More debug output in the log, timing each step from starting an engrave to showing the new PDF.
+
 ## [1.1.0] - 2026-11-21
 
 - Adds a formatter, which reindents a file (or selection) by its nesting of `{ }`, `<< >>`, `#{ #}` and Scheme parentheses. It keeps the file's line breaks, and leaves lines starting inside block comments and multi-line strings alone.
