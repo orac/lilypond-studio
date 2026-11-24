@@ -177,6 +177,7 @@ export function registerEngraveOnSave(context: vscode.ExtensionContext): void {
 		vscode.tasks.onDidStartTask(e => {
 			const def = e.execution.task.definition;
 			if (def.type === 'lilypond') {
+				log.debug(`Engrave started: ${e.execution.task.name}`);
 				lastDefinition = def as LilyPondTaskDefinition;
 				updateStatusItem();
 				updateSaveListener();
@@ -185,8 +186,16 @@ export function registerEngraveOnSave(context: vscode.ExtensionContext): void {
 		})
 	);
 	context.subscriptions.push(
+		vscode.tasks.onDidEndTaskProcess(e => {
+			if (e.execution.task.definition.type === 'lilypond') {
+				log.debug(`LilyPond exited with code ${e.exitCode}: ${e.execution.task.name}`);
+			}
+		})
+	);
+	context.subscriptions.push(
 		vscode.tasks.onDidEndTask(e => {
 			if (e.execution.task.definition.type === 'lilypond') {
+				log.debug(`Engrave task ended: ${e.execution.task.name}`);
 				statusItem.busy = false;
 			}
 			if (e.execution === runningExecution) {

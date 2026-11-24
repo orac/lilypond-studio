@@ -213,16 +213,22 @@ export class PdfViewerPanel {
 		const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(vscode.Uri.file(path.dirname(this.pdfUri.fsPath)), path.basename(this.pdfUri.fsPath)));
 		let reloadTimer: NodeJS.Timeout | undefined;
 		let deleteTimer: NodeJS.Timeout | undefined;
-		const scheduleReload = () => {
+		const pdfName = path.basename(this.pdfUri.fsPath);
+		const scheduleReload = (event: 'changed' | 'created') => {
+			log.debug(`${pdfName} was ${event}; reloading the preview in 300 ms unless it changes again`);
 			clearTimeout(deleteTimer);
 			clearTimeout(reloadTimer);
-			reloadTimer = setTimeout(() => this.postMessage({ type: 'reload' }), 300);
+			reloadTimer = setTimeout(() => {
+				log.debug(`Reloading the preview of ${pdfName}`);
+				this.postMessage({ type: 'reload' });
+			}, 300);
 		};
-		watcher.onDidChange(scheduleReload);
-		watcher.onDidCreate(scheduleReload);
+		watcher.onDidChange(() => scheduleReload('changed'));
+		watcher.onDidCreate(() => scheduleReload('created'));
 		watcher.onDidDelete(() => {
+			log.debug(`${pdfName} was deleted`);
 			clearTimeout(deleteTimer);
-			deleteTimer = setTimeout(() => vscode.window.showWarningMessage(`${path.basename(this.pdfUri.fsPath)} was deleted`), 2000);
+			deleteTimer = setTimeout(() => vscode.window.showWarningMessage(`${pdfName} was deleted`), 2000);
 		});
 		return new vscode.Disposable(() => {
 			clearTimeout(reloadTimer);
